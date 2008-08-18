@@ -1,0 +1,26 @@
+model: Testcase                                        #Testcase using CMAQ
+input_path: testfile
+output_path: ./
+begin_hour: False # False = begin_hour (CMAQ EndHour;CAMx Begin Hour)
+color: [0x000000,0x47d600,0xff0000,0x0000ff,0x9933FF,0x703A00,0x00cccc,0xff6600]
+Species:
+        - [TESTCASE,
+          [TESTCASE]]
+        
+Process:
+        - [Conc_Inital, [INIT]]
+        - [Emissions, [EMIS]]
+        - [Chemistry, [CHEM]]
+        - [H_Trans, [XADV, YADV, HDIF]]
+        - [V_Trans, [ZADV, VDIF]]
+        - [Entrain, [VENT, VDET, HENT, HDET]]
+        - [Deposit, [DDEP]]
+        - [Dilution, [EDHDIL, EDVDIL]]
+time_slice: 
+        - [2006229, '01']
+        - [2006230, '00']
+display_time_offset: -6
+units_Time: Hours(LST)
+units_Conc: ppb/hr or ppb
+
+

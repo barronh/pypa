@@ -1,0 +1,99 @@
+#CAMx Template for phy_plot parameters. This template is used with phy_plot.py
+
+# The model is a required field
+model: CAMx                                        #CAMx, CMAQ, or Testcase
+
+#Set the complete input path of where the model data is located from the NetCDFFile file (*.mrg.nc)
+input_path: /Users/valenal/Projects/TestReaders/PHY/uh1TCEQtke_b1b.psito2n2.20000825.mrg.nc
+
+#Set the complete output path of where the physical process plots are to be located
+output_path: /Users/valenal/Fig
+
+#
+begin_hour: True # False = end_hour (CMAQ EndHour;CAMx Begin Hour)
+
+#Set the standard colors for all step lines in the graph
+color: [0x000000,0x47d600,0xff0000,0x0000ff,0x9933FF,0x703A00,0x00cccc,0xff6600]
+
+#List of all default species from the NetCDfFile for CAMx. Also included is VOCC as an 
+#example of how to make carbon weighted VOC aggregation (Each Process for each species is 
+#is mulitpied by its corresponding carbon number to get the wiehted average of VOCC concetration)
+Species:
+        - [VOCC,
+          [FORM, ALD2, PAR, OLE, ETH, TOL, XYL, CRES, MGLY, ISOP, MEOH, ETOH],
+          [1,2,1,2,2,7,8,7,3,5,1,2]]
+        - [FORM,
+          [FORM]]
+        - [ALD2,
+          [ALD2]]
+        - [PAR,
+          [PAR]]
+        - [OLE,
+          [OLE]]
+        - [ETH,
+          [ETH]]
+        - [TOL,
+          [TOL]]
+        - [XYL,
+          [XYL]]
+        - [CRES,
+          [CRES]]
+        - [MGLY,
+          [MGLY]]
+        - [ISOP,
+          [ISOP]]
+        - [MEOH,
+          [MEOH]]
+        - [ETOH,
+          [ETOH]]
+        - [CO,
+          [CO]]
+        - [H2O2,
+          [H2O2]]
+        - [HONO,
+          [HONO]]
+        - [HNO3,
+          [HNO3]]
+        - ["NO",
+          ["NO"]]
+        - [NO2,
+          [NO2]]
+        - [NXOY,
+          [NXOY]]
+        - [O3,
+          [O3]]
+        - [OPEN,
+          [OPEN]]
+        - [PAN,
+          [PAN]]
+        - [PNA,
+          [PNA]]
+
+#LIst of default Processes from the NetCDfFile for CAMx        
+Process:
+        - [Conc_Inital, [INIT]]
+        - [Emissions, [EMIS, PTEMIS, PIG]]
+        - [Chemistry, [CHEM]]
+        - [H_Trans, [A_W, A_E, A_S, A_N, D_W, D_E, D_S, D_N]]
+        - [V_Trans, [A_B, A_T, D_B, D_T]]
+        - [Entrain, [VENT, VDET, HENT, HDET]]
+        - [Deposit, [DDEP, WDEP]]
+        - [Dilution, [DIL, EDHDIL, EDVDIL]]
+
+#Set the time range in the following format which includes year, julian day and hour
+time_slice: 
+        - [2000238, '00']
+        - [2000238, '23']
+
+#Set the time zone for output
+display_time_offset: 0
+
+#Units for the Graph
+units_Time: Hours(LST)
+units_Conc: ppb/hr or ppb
+
+#Optional Parameter sets scale 
+Scale: False
+#Scale_lowerLimit sets the lower bound of the axis, Scale_upperLimit sets the upper bound of the axis.
+#Scale_lowerLimit: 0
+#Scale_upperLimit: 10
