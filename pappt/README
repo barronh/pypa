@@ -1,0 +1,42 @@
+GENERAL OVERVIEW
+pyPA is a suite of Process Analysis post-processing tools written in Python.  The general purpose is
+to develop a conceptual ozone accumulation process for an area larger than a single model cell.  The
+process outline follows.
+
+STEPS
+1) Decide what cells are of interest
+2) Run the model (cmaq, camx, or wrf) with PA extensions enabled
+3) Prepare PA outputs for post-processing (mainly for cmaq)
+4) Check for reasonable results
+5) Extract values for each process and reaction
+6) Combine cell process and reaction values to a single volume set 
+   of process and reaction values
+7) Add processes to account for changes in the volume through time
+   (e.g. growth of the planetary boundary layer or movement to track a plume)
+8) Visualize processes and/or reactions
+9) Create a set of net reactions
+
+MAPPING STEPS TO PYTHON
+1-2) Are outside the scope of the post-processor.  
+3)   Functions for step 3, which is primarily for CMAQ, are in cmaqprep.py
+4)   Functions for step 4, which should be done for any model are in pa_qa.py (also a script)
+5-7) Functions are in pappt.py, which is the core post-processor
+8)   In development, but not yet available
+9)   Currently fullfilled by the net_balance project.  Functions in legacy.py help prepare data from 
+     steps 5-7 for this net_balance_CB4.py.  Soon that functionality will be updated based on a 
+     variant, which can interact with a more flexible data type.
+   
+SYSTEM REQUIREMENTS
+Operating Systems: OS X Tiger and Leopard
+Hardware: PowerPC and Intel
+
+PREREQUISITE SOFTWARE
+C Libraries:
+	netcdf
+	gdal
+Python Packages:
+   numpy
+   gdal
+   yaml
+   pynetcdf or Scientific.IO.NetCDF
+
