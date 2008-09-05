@@ -312,13 +312,13 @@ class extracted(object):
         procs=[self.prc.index(i) for i in self.prc if i not in [final_prc]+exclude]
         try:
             final_id=self.prc.index(final_prc)
-            tempadj=ipr_output[:,:,final_id]-ipr_output[:,:,procs].sum(-1)
+            tempadj=ipr_output[:-1,:,final_id]-ipr_output[1:,:,init_id]
         except:
-            tempadj=zeros(ipr_output.shape[:2],'f')
+            tempadj=zeros(ipr_output.shape[:2],'f')[1:]
 
         # Add temperature adjustment process
         p=self.prc.index('TEMPADJ')
-        ipr_output[:,:,p]=tempadj
+        ipr_output[1:,:,p]=tempadj
 
         irr_output[:,:]=nansum(self.reaction[:,:,def_boxes],-1)/nansum(self.normalizer[:,def_boxes],axis=-1)[:,newaxis]
         
