@@ -10,6 +10,13 @@ from pyPA.utils.CAMx.uamiv.Memmap import TestMemmap as UAMIVMemmap
 from pyPA.utils.CAMx.point_source.Memmap import TestMemmap as PointSourceMemmap
 from pyPA.utils.CAMx.ipr.Memmap import TestMemmap as IPRMemmap
 from pyPA.utils.CAMx.irr.Memmap import TestMemmap as IRRMemmap
+from pyPA.pappt.kvextract import TestPbl
+from pyPA.pappt.lagrangian import TestBoxes
+from pyPA.pappt.pappt import TestExtractor
+from pyPA.utils.ArrayTransforms import TestInteriorVertex
+from pyPA.utils.FortranFileUtil import TestFileUtils
+from pyPA.utils.sci_var import PseudoNetCDFTest
+from pyPA.utils.util import CompareTime
 
 def run():
 	unittest.main()
