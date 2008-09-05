@@ -6,6 +6,7 @@ from pyPA.utils.util import AttrDict
 from pyPA.pappt.pappt import ext_mrg,MergedWriter
 from pyPA.utils.CAMxFiles import *
 from pyPA.utils.CMAQTransforms import *
+from pyPA.utils.CAMxTransforms import *
 from pyPA.pappt.kvextract import tops2shape,vertcamx
 from pyPA.pappt.legacy import LegacyMerged,LegacyMergedCMAQ
 from pyPA.utils.ArrayTransforms import CenterTime
@@ -61,92 +62,6 @@ def camxshapemaker(iprfile,hpfile=None,kvfile=None,outpath='shape.nc',pagrid=0):
 	v.units='ON/OFF'
 	v.long_name=v.var_desc='SHAPE'.ljust(16)
 
-class cmaq_pa_master(PseudoNetCDFFile):
-	def __init__(self, paths_and_readers,tslice=slice(None),kslice=slice(None),jslice=slice(None),islice=slice(None)):
-		files=[]
-		self.__tslice=tslice
-		if tslice==slice(None):
-			self.__itslice=slice(None,-1)
-			self.__ftslice=slice(1,None)
-		else:
-			self.__itslice=slice(tslice.start-1,tslice.stop)
-			self.__ftslice=slice(tslice.start,tslice.stop+1)
-		self.__kslice=kslice
-		self.__jslice=jslice
-		self.__islice=islice
-		for p,r in paths_and_readers:
-			files.append(eval(r)(p))
-		self.__child=file_master(files)
-		for k in self.__child.__dict__:
-			if k not in self.__dict__:
-				setattr(self,k,getattr(self.__child,k))
-		self.__meta_vars=['AIRMOLS', 'INVAIRMOLS','DEFAULT_SHAPE']
-		self.dimensions=self.__child.dimensions.copy()
-		self.dimensions['TSTEP']=files[0].variables.values()[0].shape[0]
-		self.variables=PseudoNetCDFVariables(self.__variables__,self.__child.variables.keys()+self.__meta_vars+['FCONC_O3'])
-	
-	def __variables__(self,key):
-		if key == 'AIRMOLS':
-			return PseudoNetCDFVariable(self,key,'f',('TSTEP', 'LAY', 'ROW', 'COL'),CenterTime(self.XCELL*self.YCELL*(self.variables['ZF'][:,:,:,:]-self.variables['ZH'][:,:,:,:])*2/8.314472/self.variables['TA'])[self.__tslice,self.__kslice,self.__jslice,self.__islice])
-		elif key == 'INVAIRMOLS':
-			return PseudoNetCDFVariable(self,key,'f',('TSTEP', 'LAY', 'ROW', 'COL'),1/self.variables['AIRMOLS'][:,:,:,:])
-		elif key == 'DEFAULT_SHAPE':
-			new_shape=[i for i in self.variables['FCONC_O3'].shape]
-			new_shape[0]+=1
-			return PseudoNetCDFVariable(self,key,'bool',('TSTEP', 'LAY', 'ROW', 'COL'),ones(new_shape,'bool'))
-		if key[:5] in ['INITI','INIT_']:
-			return self.__INITCONC__(key)
-		elif key[:6] in ['FCONC_','FINAL_']:
-			return self.__FINALCONC__(key)
-		else:
-			return self.__child.variables[key]
-	
-	def __INITCONC__(self,key):
-		var=self.variables[key[5:]]
-		newvar=PseudoNetCDFVariable(self,key,var.typecode(),('TSTEP','LAY','ROW','COL'),var[self.__itslice,self.__kslice,self.__jslice,self.__islice])
-		for k,v in var.__dict__.iteritems():
-			setattr(newvar,k,v)
-		return newvar
-
-	def __FINALCONC__(self,key):
-		var=self.variables[key[6:]]
-		newvar=PseudoNetCDFVariable(self,key,var.typecode(),('TSTEP','LAY','ROW','COL'),var[1:,self.__kslice,self.__jslice,self.__islice])
-		for k,v in var.__dict__.iteritems():
-			setattr(newvar,k,v)
-		return newvar
-		
-class camx_pa_master(PseudoNetCDFFile):
-	def __init__(self, paths_and_readers):
-		files=[]
-		for p,r in paths_and_readers:
-			files.append(eval(r)(p))
-		self.__child=file_master(files)
-		self.files='\n'.join([p for p,r in paths_and_readers])
-		self.__meta_vars=['AIRMOLS', 'INVAIRMOLS','DEFAULT_SHAPE','VOL']
-		self.dimensions=self.__child.dimensions.copy()
-		self.variables=PseudoNetCDFVariables(self.__variables__,self.__child.variables.keys()+self.__meta_vars)
-		for k in self.__child.__dict__:
-			if k not in self.__dict__:
-				setattr(self,k,getattr(self.__child,k))
-	
-	def __variables__(self,key):
-		if key == 'AIRMOLS':
-			return PseudoNetCDFVariable(self,key,'f',('TSTEP', 'LAY', 'ROW', 'COL'),1/self.variables['INVAIRMOLS'])
-		elif key == 'INVAIRMOLS':
-			return PseudoNetCDFVariable(self,key,'f',('TSTEP', 'LAY', 'ROW', 'COL'),self.variables['UCNV_O3']/self.variables['AVOL_O3'])
-		elif key == 'VOL':
-			return PseudoNetCDFVariable(self,key,'f',('TSTEP', 'LAY', 'ROW', 'COL'),self.variables['AVOL_O3'])
-		elif key == 'DEFAULT_SHAPE':
-			old_shape=[i for i in self.variables['UCNV_O3'].shape]
-			new_shape=[i for i in self.variables['UCNV_O3'].shape]
-			new_shape[0]+=1
-			new_shape=zeros(tuple(new_shape),dtype='bool')
-			new_shape[1:,:,:,:]=tops2shape(vertcamx(CenterTime(self.variables['KV']),CenterTime(self.variables['HGHT'])),old_shape)
-			new_shape[0,:,:,:]=new_shape[1,:,:,:]
-			return PseudoNetCDFVariable(self,key,'i',('TSTEP', 'LAY', 'ROW', 'COL'),new_shape)
-		else:
-			return self.__child.variables[key]		
-
 def LoadPAQAFromYAML(yamlfile): 
 	# Step 0: load YAML file as job, which is an attribute dictionary
 	job=AttrDict(yaml.load(file(yamlfile)))
@@ -200,10 +115,10 @@ def LoadPyPAFromYAML(yamlfile):
 	if job.normalizer==job.irr_contribution:
 		normalizer=irr_contribution
 	else:
-		if type(job.ipr_contribution)==str:
+		if type(job.normalizer)==str:
 			normalizer=pr_rr.variables[job.normalizer]
 		else:
-			normalizer=job.normalizer*shape
+			normalizer=job.normalizer
 		
 	
 	kaxis=job.kaxis

@@ -222,8 +222,7 @@ class extracted(object):
         # For pseudo-processes en(de)trainment, dilution and tempadj, over-write values
         # with delta in edtrain variable (INIT)
         init_id=self.prc.index(init_prc)
-        final_id=self.prc.index(final_prc)
-
+        
         #  Assumed order
         #  Pseudo Process: (1) V Detrain (2) V Entrain and Dilution (3) H Detrain (4) H Entrain and Dilution
         # 
@@ -304,7 +303,11 @@ class extracted(object):
         #  Temperature adjustment accounts for difference between the final and sum of initial and process concentration
         #  TempAdj=Final-Init-dC
         procs=[self.prc.index(i) for i in self.prc if i not in [final_prc]+exclude]
-        tempadj=ipr_output[:,:,final_id]-ipr_output[:,:,procs].sum(-1)
+        try:
+            final_id=self.prc.index(final_prc)
+            tempadj=ipr_output[:,:,final_id]-ipr_output[:,:,procs].sum(-1)
+        except:
+            tempadj=zeros(ipr_output.shape[:2],'f')
 
         # Add temperature adjustment process
         p=self.prc.index('TEMPADJ')
@@ -366,7 +369,7 @@ def MergedWriter(outpath,ipr_irr,shape,tflag):
 class TestExtractor(unittest.TestCase):
     def setUp(self):
         spc=['NO','NO2','O3']
-        prc=['ADV','DIF','EMIS','CHEM']
+        prc=['INIT','ADV','DIF','EMIS','CHEM','FCONC']
         rxn=['IRR_1','IRR_2','IRR_3','IRR_4']
         ntime=4
         shape=zeros((5,3,4,5),'f')
@@ -395,6 +398,7 @@ class TestExtractor(unittest.TestCase):
         self.assert_((self.ext.process[:,spc,prc,:]==self.ans).all())
     
     def testMerge(self):
+        from lagrangian import box_id
         s=zeros((3,2,2,2),'i') # 3 times; 2x2x2 spatial grid
         s[0,0,0,0]=1 # turn on time 0, 0,0,0 cell
         s[1,...]=1 # turn on time 1 all cells
@@ -402,16 +406,17 @@ class TestExtractor(unittest.TestCase):
         
         v=zeros((2,2,2,2),'f') # create values for testing
         v[0,...]=arange(1,9,dtype='f').reshape((2,2,2)) # assign array with unique values
-        v[1,...]=arange(1,9,dtype='f').reshape((2,2,2))
+        v[1,...]=arange(1,9,dtype='f').reshape((2,2,2))*2
         
-        # Create an extracted object with 2 procs, 1 species, 1 reaction, 2 times, boxes, and an
+        # Create an extracted object with 3 procs, 1 species, 1 reaction, 2 times, boxes, and an
         # even normalizer
-        ext=extracted(['O3'],['INIT','OTHER'],['IRR'],boxes(s),ones((2,2,2,2),'f'))
+        ext=extracted(['O3'],['INIT','OTHER','FCONC'],['IRR'],boxes(s),ones((2,2,2,2),'f'))
         
         # Add values to reactions and both processes
         ext.aggregate_reaction(0,v)
         ext.aggregate_process(0,0,v)
         ext.aggregate_process(0,1,v)
+        ext.aggregate_process(0,2,v*2)
         
         # Merge values
         mrg=ext.merge()
@@ -420,43 +425,53 @@ class TestExtractor(unittest.TestCase):
         ipr=mrg.variables['IPR']
         
         # Check time 0 values
-        self.assertEqual(ipr[0,0,0],1.) # INIT
-        self.assertEqual(ipr[0,0,2],5./8.) # VENT
-        self.assertEqual(ipr[0,0,3],0./8.) # VDET
-        self.assertEqual(ipr[0,0,4],30./8.) # HENT
-        self.assertEqual(ipr[0,0,5],0.) # HDET
-        self.assertEqual(ipr[0,0,6],0./8.) # Dilution
-        self.assertEqual(ipr[0,0,1],36./8.) # OTHER
+        self.assertEqual(ipr[0,0,ext.prc.index('INIT')],1.) # INIT
+        self.assertEqual(ipr[0,0,ext.prc.index('OTHER')],36./8.) # OTHER
+        self.assertEqual(ipr[0,0,ext.prc.index('FCONC')],72./8.) # FCONC
+        self.assertEqual(ipr[0,0,ext.prc.index('VENT')],5./2.) # VENT
+        self.assertEqual(ipr[0,0,ext.prc.index('VDET')],0.) # VDET
+        self.assertEqual(ipr[0,0,ext.prc.index('HENT')],30./8.) # HENT
+        self.assertEqual(ipr[0,0,ext.prc.index('HDET')],0.) # HDET
+        self.assertEqual(ipr[0,0,ext.prc.index('EDVDIL')],-0.5) # Dilution
+        self.assertEqual(ipr[0,0,ext.prc.index('EDHDIL')],-2.25) # Dilution
+        self.assertEqual(ipr[0,0,ext.prc.index('TEMPADJ')],0.) # Dilution
 
         # Check time 1 values
-        self.assertEqual(ipr[1,0,0],36./8.) # INIT
-        self.assertEqual(ipr[1,0,2],0) # VENT
-        self.assertEqual(ipr[1,0,3],4./8.) # VDET
-        self.assertEqual(ipr[1,0,4],0) # HENT
-        self.assertEqual(ipr[1,0,5],24./8.) # HDET
-        self.assertEqual(ipr[1,0,6],0./8.) # Dilution
-        self.assertEqual(ipr[1,0,1],8./1.) # other
+        self.assertEqual(ipr[1,0,ext.prc.index('INIT')],72./8.) # INIT
+        self.assertEqual(ipr[1,0,ext.prc.index('OTHER')],16.) # other
+        self.assertEqual(ipr[1,0,ext.prc.index('FCONC')],32.) # final
+        self.assertEqual(ipr[1,0,ext.prc.index('VENT')],0) # VENT
+        self.assertEqual(ipr[1,0,ext.prc.index('VDET')],array(0.14285715,'f')) # VDET
+        self.assertEqual(ipr[1,0,ext.prc.index('HENT')],0) # HENT
+        self.assertEqual(ipr[1,0,ext.prc.index('HDET')],array(6.85714293,'f')) # HDET
+        self.assertEqual(ipr[1,0,ext.prc.index('EDVDIL')],0./8.) # Dilution
+        self.assertEqual(ipr[1,0,ext.prc.index('EDHDIL')],0./8.) # Dilution
+        self.assertEqual(ipr[1,0,ext.prc.index('TEMPADJ')],0./8.) # Dilution
 
         # Use large initial value to create dilution for testing
         v[0,0,0,0]=10.
         
         # recreate extract and remerge
-        ext=extracted(['O3'],['INIT','OTHER'],['IRR'],boxes(s),ones((2,2,2,2),'f'))
+        ext=extracted(['O3'],['INIT','OTHER','FCONC'],['IRR'],boxes(s),ones((2,2,2,2),'f'))
         ext.aggregate_reaction(0,v)
         ext.aggregate_process(0,0,v)
         ext.aggregate_process(0,1,v)
+        ext.aggregate_process(0,2,v*2)
         mrg=ext.merge()
         irr=mrg.variables['IRR']
         ipr=mrg.variables['IPR']
         
         # Check values for time 1
-        self.assertEqual(ipr[0,0,0],10.) # INIT
-        self.assertEqual(ipr[0,0,2],5./1.*1./8.) # VENT
-        self.assertEqual(ipr[0,0,3],0.) # VDET
-        self.assertEqual(ipr[0,0,4],30./6.*6./8.) # HENT
-        self.assertEqual(ipr[0,0,5],0.) # HDET
-        self.assertEqual(ipr[0,0,6],-4.375) # Dilution
-        self.assertEqual(ipr[0,0,1],45./8.) # OTHER
+        self.assertEqual(ipr[0,0,ext.prc.index('INIT')],10.) # INIT
+        self.assertEqual(ipr[0,0,ext.prc.index('OTHER')],5.625) # OTHER
+        self.assertEqual(ipr[0,0,ext.prc.index('FCONC')],11.25) # FCONC
+        self.assertEqual(ipr[0,0,ext.prc.index('VENT')],2.5) # VENT
+        self.assertEqual(ipr[0,0,ext.prc.index('VDET')],0) # VDET
+        self.assertEqual(ipr[0,0,ext.prc.index('HENT')],3.75) # HENT
+        self.assertEqual(ipr[0,0,ext.prc.index('HDET')],0) # HDET
+        self.assertEqual(ipr[0,0,ext.prc.index('EDVDIL')],-5.) # Dilution
+        self.assertEqual(ipr[0,0,ext.prc.index('EDHDIL')],-5.625) # Dilution
+        self.assertEqual(ipr[0,0,ext.prc.index('TEMPADJ')],0./8.) # Dilution
 
     def runTest(self):
         pass
