@@ -222,9 +222,20 @@ def LegacyMergedCMAQ(outpath,inpath):
                 elif p=='EDDIL':
                     val=pr[si,[prcs.index('EDHDIL'),prcs.index('EDVDIL')]].sum()
                 elif p=='A_W':
-                    val=pr[si,prcs.index('XADV')]
+                    if 'XADV' in prcs:
+                        pi=prcs.index('XADV')
+                    elif 'HADV' in prcs:
+                        pi=prcs.index('HADV')
+                    else:
+                        raise ValueError, "Legacy is only configured for XY and H ADV"
+                    val=pr[si,pi]
                 elif p=='A_S':
-                    val=pr[si,prcs.index('YADV')]
+                    if 'YADV' in prcs:
+                        val=pr[si,prcs.index('YADV')]
+                    elif 'HADV' in prcs:
+                        val=0
+                    else:
+                        raise ValueError, "Legacy is only configured for XY and H ADV"
                 elif p=='A_T':
                     val=pr[si,prcs.index('ZADV')]
                 elif p=='D_W':
@@ -232,7 +243,12 @@ def LegacyMergedCMAQ(outpath,inpath):
                 elif p=='D_T':
                     val=pr[si,prcs.index('VDIF')]
                 elif p=='DIL':
-                    val=pr[si,prcs.index('ADJC')]
+                    if 'ADJC' in prcs:
+                        val=pr[si,prcs.index('ADJC')]
+                    elif 'HADV' in prcs:
+                        val=0
+                    else:
+                        raise ValueError, "Legacy is only configured for YAMO or ppm"                    
                 else:
                     try:
                         val=pr[si,prcs.index(p)]

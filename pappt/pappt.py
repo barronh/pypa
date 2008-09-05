@@ -84,7 +84,14 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
         slice(nanmin(idx[2]-1).astype('i'),nanmax(idx[2]).astype('i'))
         ]
     shape=shape[envelope]
-    normalizer=normalizer[envelope]
+    try:
+        normalizer=normalizer[envelope]
+    except TypeError:
+        if isinstance(normalizer,(int,float)):
+            normalizer=shape[1:]*normalizer
+        else:
+            raise
+        
     if type(irr_contribution) not in [float,int]:
         irr_contribution=irr_contribution[envelope]
     if type(irr_unitconversion) not in [float,int]:
@@ -363,6 +370,10 @@ def MergedWriter(outpath,ipr_irr,shape,tflag):
     shape_out.long_name='SHAPE'.ljust(16)
     time=ipr_irr.createVariable('TFLAG','i',('TSTEP','VAR','DATE-TIME'))
     time[:,:,:]=tflag[:,newaxis,:]
+    time.units='YYYYJJJ,HHDDMM'
+    time.var_desc='TFLAG'.ljust(16)
+    time.long_name='TFLAG'.ljust(16)
+    
     
     return Pseudo2NetCDF().convert(ipr_irr,outpath)
     

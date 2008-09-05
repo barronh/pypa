@@ -22,10 +22,10 @@ kaxis: 1
 #### Required: IRR, IPR, SHAPE | ([FOOTPRINT] VERTICAL_DIFF)
 metawrapper: camx_pa_master
 files: 
-  - [/Users/barronh/Documents/Development/testdata/camxoutput/camx420_pa_cb4.20000825.hgb8h.b1b.psito2n2.HONOeq0.05NOx.TCEQuh1_eta_tke.ipr, ipr]
-  - [/Users/barronh//Documents/Development/testdata/camxoutput/camx420_pa_cb4.20000825.hgb8h.b1b.psito2n2.HONOeq0.05NOx.TCEQuh1_eta_tke.irr, irr]
-  - [/Users/barronh/Documents/Development/testdata/met/camx_kv.20000825.hgbpa_04km.TCEQuh1_eta.v43.tke, "(lambda path: window(vertical_diffusivity(path, 65,83),kslice=slice(None),jslice=slice(24,36),islice=slice(18,35)))"]
-  - [/Users/barronh/Documents/Development/testdata/met/camx_zp.20000825.hgbpa_04km.TCEQuh1_eta.v43, "(lambda path: window(height_pressure(path, 65,83),kslice=slice(None),jslice=slice(24,36),islice=slice(18,35)))"]
+  - [/Users/barronh/Documents/Development/pyPA/testcase/utils/CAMx/ipr/camx420_pa_cb4.20000825.hgb8h.b1b.psito2n2.HONOeq0.05NOx.TCEQuh1_eta_tke.ipr, ipr]
+  - [/Users/barronh/Documents/Development/pyPA/testcase/utils/CAMx/irr/camx420_pa_cb4.20000825.hgb8h.b1b.psito2n2.HONOeq0.05NOx.TCEQuh1_eta_tke.irr, irr]
+  - [/Users/barronh/Documents/Development/pyPA/testcase/utils/CAMx/vertical_diffusivity/camx_kv.20000825.hgbpa_04km.TCEQuh1_eta.v43.tke, "(lambda path: window(vertical_diffusivity(path, 65,83),kslice=slice(None),jslice=slice(24,36),islice=slice(18,35)))"]
+  - [/Users/barronh/Documents/Development/pyPA/testcase/utils/CAMx/height_pressure/camx_zp.20000825.hgbpa_04km.TCEQuh1_eta.v43, "(lambda path: window(height_pressure(path, 65,83),kslice=slice(None),jslice=slice(24,36),islice=slice(18,35)))"]
 
 
 ###############################################
@@ -52,10 +52,7 @@ ipr_unitconversion: 1000
 ###############################################
 ###### PA IRR/IPR VARIABES               ######
 ###############################################
-#species: ['NO', 'NO2', 'O3', 'OLE', 'PAN', 'NXOY', 'PAR', 'TOL', 'XYL', 'FORM', 'ALD2', 'ETH', 'CRES', 'MGLY', 'OPEN', 'PNA', 'CO', 'HONO', 'H2O2', 'HNO3', 'ISOP', 'MEOH', 'ETOH']
-#processes: ['INIT', 'CHEM', 'EMIS', 'PTEMIS', 'PIG', 'A_W', 'A_E', 'A_S', 'A_N', 'A_B', 'A_T', 'DIL', 'D_W', 'D_E', 'D_S', 'D_N', 'D_B', 'D_T', 'DDEP', 'WDEP', 'AERCHEM', 'FCONC']
-#reactions: ['RXN_01', 'RXN_02', 'RXN_03', 'RXN_04', 'RXN_05', 'RXN_06', 'RXN_07', 'RXN_08', 'RXN_09', 'RXN_10', 'RXN_11', 'RXN_12', 'RXN_13', 'RXN_14', 'RXN_15', 'RXN_16', 'RXN_17', 'RXN_18', 'RXN_19', 'RXN_20', 'RXN_21', 'RXN_22', 'RXN_23', 'RXN_24', 'RXN_25', 'RXN_26', 'RXN_27', 'RXN_28', 'RXN_29', 'RXN_30', 'RXN_31', 'RXN_32', 'RXN_33', 'RXN_34', 'RXN_35', 'RXN_36', 'RXN_37', 'RXN_38', 'RXN_39', 'RXN_40', 'RXN_41', 'RXN_42', 'RXN_43', 'RXN_44', 'RXN_45', 'RXN_46', 'RXN_47', 'RXN_48', 'RXN_49', 'RXN_50', 'RXN_51', 'RXN_52', 'RXN_53', 'RXN_54', 'RXN_55', 'RXN_56', 'RXN_57', 'RXN_58', 'RXN_59', 'RXN_60', 'RXN_61', 'RXN_62', 'RXN_63', 'RXN_64', 'RXN_65', 'RXN_66', 'RXN_67', 'RXN_68', 'RXN_69', 'RXN_70', 'RXN_71', 'RXN_72', 'RXN_73', 'RXN_74', 'RXN_75', 'RXN_76', 'RXN_77', 'RXN_78', 'RXN_79', 'RXN_80', 'RXN_81', 'RXN_82', 'RXN_83', 'RXN_84', 'RXN_85', 'RXN_86', 'RXN_87', 'RXN_88', 'RXN_89', 'RXN_90', 'RXN_91', 'RXN_92', 'RXN_93', 'RXN_94', 'RXN_95', 'RXN_96']
-species: ['NO', 'NO2', 'O3'] 
+species: ['NO', 'NO2', 'O3', 'OLE', 'PAN', 'NXOY', 'PAR', 'TOL', 'XYL', 'FORM', 'ALD2', 'ETH', 'CRES', 'MGLY', 'OPEN', 'PNA', 'CO', 'HONO', 'H2O2', 'HNO3', 'ISOP', 'MEOH', 'ETOH']
 processes: ['INIT', 'CHEM', 'EMIS', 'PTEMIS', 'PIG', 'A_W', 'A_E', 'A_S', 'A_N', 'A_B', 'A_T', 'DIL', 'D_W', 'D_E', 'D_S', 'D_N', 'D_B', 'D_T', 'DDEP', 'WDEP', 'AERCHEM', 'FCONC']
-reactions: ['RXN_01', 'RXN_02'] 
+reactions: ['RXN_01', 'RXN_02', 'RXN_03', 'RXN_04', 'RXN_05', 'RXN_06', 'RXN_07', 'RXN_08', 'RXN_09', 'RXN_10', 'RXN_11', 'RXN_12', 'RXN_13', 'RXN_14', 'RXN_15', 'RXN_16', 'RXN_17', 'RXN_18', 'RXN_19', 'RXN_20', 'RXN_21', 'RXN_22', 'RXN_23', 'RXN_24', 'RXN_25', 'RXN_26', 'RXN_27', 'RXN_28', 'RXN_29', 'RXN_30', 'RXN_31', 'RXN_32', 'RXN_33', 'RXN_34', 'RXN_35', 'RXN_36', 'RXN_37', 'RXN_38', 'RXN_39', 'RXN_40', 'RXN_41', 'RXN_42', 'RXN_43', 'RXN_44', 'RXN_45', 'RXN_46', 'RXN_47', 'RXN_48', 'RXN_49', 'RXN_50', 'RXN_51', 'RXN_52', 'RXN_53', 'RXN_54', 'RXN_55', 'RXN_56', 'RXN_57', 'RXN_58', 'RXN_59', 'RXN_60', 'RXN_61', 'RXN_62', 'RXN_63', 'RXN_64', 'RXN_65', 'RXN_66', 'RXN_67', 'RXN_68', 'RXN_69', 'RXN_70', 'RXN_71', 'RXN_72', 'RXN_73', 'RXN_74', 'RXN_75', 'RXN_76', 'RXN_77', 'RXN_78', 'RXN_79', 'RXN_80', 'RXN_81', 'RXN_82', 'RXN_83', 'RXN_84', 'RXN_85', 'RXN_86', 'RXN_87', 'RXN_88', 'RXN_89', 'RXN_90', 'RXN_91', 'RXN_92', 'RXN_93', 'RXN_94', 'RXN_95', 'RXN_96']
 
