@@ -15,8 +15,7 @@ from math import fmod
 from ChartDirector import *
 from mx import DateTime
 import calendar as cal
-
-
+import pdb
 
 # Object that takes a yaml file with several parameters which include time_slice, model, time_offsets, 
 # species and process desired, as well as input data.
@@ -59,19 +58,22 @@ def phy_plot(job, ncfvariable= None):
 
 	for ni,i in enumerate(timetest):
 		timetest[ni][-1]= str(timetest[ni][-1]/10000).zfill(2)
+		
+	sidx=timetest.index(job['time_slice'][0]);eidx=timetest.index(job['time_slice'][1])
+	timetest = timetest[sidx:eidx+1]
 	
 	timetemp=[]
 	for ni,i in enumerate(timetest):
 		timetemp.append(DateTime.ISO.ParseDateTime(time.strftime("%Y-%m-%d %H:%M:%S", time.strptime(str(timetest[ni]), "[%Y%j, '%H']"))))
 	
-	sidx=timetest.index(job['time_slice'][0]);eidx=timetest.index(job['time_slice'][1])
+	
 	dataX = range(sidx,eidx+1)
 	if job['begin_hour'] == True:
 		timetemp.append(timetemp[-1]+.041666666666666666)
 	else:
 		timetemp.insert(0,timetemp[0]-.041666666666666666)
-	data_ins = range(sidx,eidx+1)
-	data_step = range(sidx,eidx+2)
+	data_ins = range(len(dataX))
+	data_step = range(len(dataX)+1)
 	
 	timehours1=[(timetemp[ni]+(.041666666666666666*job['display_time_offset'])).hour for ni,i in enumerate(timetemp)]
 	tt=[timetemp[ni]+(.041666666666666666*job['display_time_offset']) for ni,i in enumerate(timetemp)]
@@ -84,7 +86,6 @@ def phy_plot(job, ncfvariable= None):
 	date=str(datetime(DATE/1000,1,1)+timedelta(days=fmod(DATE,1000.)-1)).split()
 	DATE=date[0].replace('-','')
 
-	
 	for spi,(spcn,spc_list,spc_wt) in enumerate(job['Species']):
 		# Create a XYChart object of size 500 x 270 pixels, with white
 		# background, black border, 1 pixel 3D border effect and rounded corners
@@ -136,7 +137,6 @@ def phy_plot(job, ncfvariable= None):
 				step_layer[pri] = c.addStepLineLayer(list(spc_sum[temp]), color[pri], prcn)
 				step_layer[pri].setLineWidth(5)
 				step_layer[pri].setXData(data_step)
-			
 			
 		c.makeChart('%s/phy_plot_%s_%s.png' %(outputpath,spcn,DATE))
 
