@@ -154,7 +154,10 @@ def LoadPyPAFromYAML(yamlfile):
 	# END STEP 5: write merged output to disk and sync buffer to disk
 	
 	# BEGIN STEP 6: send old merge text file to standard out
-	{'camx': LegacyMerged, 'cmaq': LegacyMergedCMAQ}[job.model.lower()](sys.stdout,outf)
+	try:
+	    {'camx': LegacyMerged, 'cmaq': LegacyMergedCMAQ}[job.model.lower()](sys.stdout,outf)
+	except:
+	    pass
 	# END STEP 6: send old merge text file to standard out
 
 def AddDefaults(job):
