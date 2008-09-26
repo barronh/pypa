@@ -4,10 +4,10 @@
 model: CAMx                                        #CAMx, CMAQ, or Testcase
 
 #Set the complete input path of where the model data is located from the NetCDFFile file (*.mrg.nc)
-input_path: /Users/valenal/Projects/TestReaders/PHY/uh1TCEQtke_b1b.psito2n2.20000825.mrg.nc
+input_path: /Users/valenal/SProjects/TestReaders/PHY/uh1TCEQtke_b1b.psito2n2.20000825.mrg.nc
 
 #Set the complete output path of where the physical process plots are to be located
-output_path: /Users/valenal/Fig
+output_path: /Users/valenal/Fig_scr
 
 #
 begin_hour: True # False = end_hour (CMAQ EndHour;CAMx Begin Hour)
@@ -36,10 +36,6 @@ Species:
           [TOL]]
         - [XYL,
           [XYL]]
-        - [CRES,
-          [CRES]]
-        - [MGLY,
-          [MGLY]]
         - [ISOP,
           [ISOP]]
         - [MEOH,
@@ -62,16 +58,12 @@ Species:
           [NXOY]]
         - [O3,
           [O3]]
-        - [OPEN,
-          [OPEN]]
         - [PAN,
           [PAN]]
-        - [PNA,
-          [PNA]]
 
-#LIst of default Processes from the NetCDfFile for CAMx        
+#List of default Processes from the NetCDfFile for CAMx        
 Process:
-        - [Conc_Inital, [INIT]]
+        - [Conc_Initial, [INIT]]
         - [Emissions, [EMIS, PTEMIS, PIG]]
         - [Chemistry, [CHEM]]
         - [H_Trans, [A_W, A_E, A_S, A_N, D_W, D_E, D_S, D_N]]
