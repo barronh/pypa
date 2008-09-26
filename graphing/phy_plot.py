@@ -41,9 +41,9 @@ def phy_plot(job, ncfvariable= None):
 	episode_filename = os.path.basename(job['input_path'])
 	
 	try:
-		ncf = ncdf(inputpath, 'r')
-	except IOError:
 		ncf = testfile
+	except:
+		ncf = ncdf(inputpath, 'r')
 	list_species=[i.strip() for i in array(ncf.Species,ndmin=1).view('|S16')]
 	prc_name_ncf = [i.strip() for i in array(ncf.Process,ndmin=1).view('|S16')]
 	color=job['color']
@@ -127,7 +127,7 @@ def phy_plot(job, ncfvariable= None):
 			spc_a=array(ipr)[dataX,:,:][:,spc_list,:][:,:,prc_list]
 			spc_a=spc_a*array(spc_wt)[newaxis,:,newaxis]
 			spc_sum=spc_a.sum(1).sum(1)
-			if prc_list == [0]:
+			if prcn == 'Conc_Initial':
 				instant_layer = c.addLineLayer2()
 				instant_layer.addDataSet(list(spc_sum), color[pri], 'Conc_Initial').setDataSymbol(DiamondSymbol, 11)
 				instant_layer.setXData(data_ins)
@@ -170,7 +170,10 @@ if __name__ == '__main__':
 		 for p in range(len(tmptest[i][:][:])):
 		  for n,ni in enumerate(tmptest[i][p][:]):
 		   test[i][p][n] = float(ni)
-		job=load(file('./phy_yaml/Testcase.yaml','r'))
+		pdb.set_trace()
+		phy_path = os.path.dirname(os.path.realpath(__file__))
+		testcase_path = os.path.join(phy_path,'phy_yaml/Testcase.yaml')
+		job=load(file(testcase_path,'r'))
 		phy_plot(job, testfile)
 	elif sys.argv[1] == 'Copytemplates':
 		phy_path = os.path.dirname(os.path.realpath(__file__))
