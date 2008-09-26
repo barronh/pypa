@@ -8,7 +8,7 @@ Species:
           [TESTCASE]]
         
 Process:
-        - [Conc_Inital, [INIT]]
+        - [Conc_Initial, [INIT]]
         - [Emissions, [EMIS]]
         - [Chemistry, [CHEM]]
         - [H_Trans, [XADV, YADV, HDIF]]
