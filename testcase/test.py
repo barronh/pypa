@@ -1,6 +1,3 @@
-"""
-Need to add docs
-"""
 import unittest
 from pyPA.utils.CAMx.wind.Memmap import TestMemmap as WindMemmap
 from pyPA.utils.CAMx.humidity.Memmap import TestMemmap as HumidityMemmap
