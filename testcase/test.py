@@ -19,7 +19,9 @@ from pyPA.utils.sci_var import PseudoNetCDFTest
 from pyPA.utils.util import CompareTime
 
 def run():
-	unittest.main()
+	import pyPA.testcase.test
+	suite=unittest.TestLoader().loadTestsFromModule(pyPA.testcase.test)
+	unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__=='__main__':
 	run()
