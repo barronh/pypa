@@ -12,6 +12,8 @@ from pyPA.utils.CAMxFiles import ipr,ipr_mem
 # Used to delimit species and process names
 delim="_"
 
+__all__ = ['PAdC']
+
 def PAdC(pa_file,spc_list=None,prc_list=None,model=None,mechanism=None,init='INIT',final='FCONC',verbose=True):
     """PAdC
     Process Analysis tallies the change in concentration (conc.) due to each 
@@ -70,13 +72,13 @@ def PAdC(pa_file,spc_list=None,prc_list=None,model=None,mechanism=None,init='INI
                 # Add individual process to change accumulator
                 PAdC+=pa_file.variables[key]
                 if verbose:
-	                print >> sys.stderr,"Found %s for %s" % (prc,spc)
+                    print >> sys.stderr,"Found %s for %s" % (prc,spc)
             else:
                 # If verbose, report skip to user
                 if verbose:
                     print >> sys.stderr,prc, "does not exist for", spc
         if PAdC.sum()==0:
-        	pritn >> sys.stderr,prc,"has no PAdC"
+            print >> sys.stderr,prc,"has no PAdC"
         # Calculate the change based on initial and final values
         ConcdC=array(pa_file.variables[final+delim+spc])-array(pa_file.variables[init+delim+spc])
         

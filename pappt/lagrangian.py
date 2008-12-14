@@ -8,6 +8,8 @@ import unittest
 from numpy import indices,zeros,nanmax,nanmin,nansum,where,vstack,squeeze,nan
 from pyPA.utils.util import AttrDict
 
+__all__ = ['box_id', 'boxes']
+
 box_id=AttrDict({'NOCHG': 0, 'VENT': 1, 'VDET': 2, 'HENT': 3, 'HDET': 4})
 def kvals(shape,kaxis):
     #get indices as an easy way to id k layer

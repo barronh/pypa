@@ -15,6 +15,8 @@ from numpy import logical_not, logical_or,logical_and,zeros,where,ones,newaxis,i
 from warnings import warn
 import unittest
 
+__all__ = ['pbldiag', 'vertcamx', 'tops2shape', 'tops2hghts', 'pblhghts2tops']
+
 def pbldiag(kvvar,kaxis=1,mintop=2):
     """
     pbldiag is based on a process developed by Dr. Vizuete and 
@@ -73,7 +75,7 @@ def pbldiag(kvvar,kaxis=1,mintop=2):
             if (done==0).any(): raise KeyError
             
     return done
-	
+
 def vertcamx(kvvar,hght,kaxis=1,mintop=2):
     """
     vertcamx comes from an algorithm provided in vertavg 
@@ -93,7 +95,7 @@ def vertcamx(kvvar,hght,kaxis=1,mintop=2):
     below=[slice(None)]*4
     here[kaxis]=slice(1,None)
     below[kaxis]=slice(None,-1)
-    
+    hght=array(hght)
     # dz is the layer thicknesses
     dz=hght.copy()
     dz[here]=dz[here]-hght[below]

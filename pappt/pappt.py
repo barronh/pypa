@@ -39,6 +39,10 @@ spatial values into their contribution categories. (see boxes
 above)  These categories can then be combined and normalized per
 user specified values to retrieve the contribution to each process
 """
+
+__all__ = ['MergedWriter', 'box_id', 'boxes', 'ext_mrg', 'extracted']
+
+
 def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,irr_unitconversion=1,ipr_contribution=1,irr_contribution=1,normalizer=1,kaxis=1):
     """
     ext_mrg is the drive horse and calls all the other functions and

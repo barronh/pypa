@@ -9,10 +9,12 @@ Legacy is a module for converting new pappt outputs to old text based formats
 """
 
 try:
-	from pynetcdf import NetCDFFile as ncf
+    from pynetcdf import NetCDFFile as ncf
 except:
-	from Scientific.IO.NetCDF import NetCDFFile as ncf
+    from Scientific.IO.NetCDF import NetCDFFile as ncf
 from numpy import array
+
+__all__ = ['LegacyMerged', 'LegacyMergedCMAQ']
 
 def LegacyMerged(outpath,inpath):
     """
