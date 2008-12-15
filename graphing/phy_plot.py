@@ -11,8 +11,9 @@ from pynetcdf import NetCDFFile as ncdf
 from numpy import array,newaxis,zeros,arange
 from yaml import load
 from datetime import datetime,timedelta
+import time
 from math import fmod
-from ChartDirector import *
+from pychartdir import *
 from mx import DateTime
 import calendar as cal
 import pdb
@@ -42,10 +43,7 @@ def phy_plot(job, ncfvariable= None):
     
     episode_filename = os.path.basename(job['input_path'])
     
-    try:
-        ncf = testfile
-    except:
-        ncf = ncdf(inputpath, 'r')
+    ncf = ncdf(inputpath, 'r')
     list_species=[i.strip() for i in array(ncf.Species,ndmin=1).view('|S16')]
     prc_name_ncf = [i.strip() for i in array(ncf.Process,ndmin=1).view('|S16')]
     color=job['color']

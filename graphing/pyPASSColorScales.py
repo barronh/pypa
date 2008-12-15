@@ -6,6 +6,7 @@ ChartDirector.  The colorscales have slightly different
 formats.
 """
 __all__=['DiscreteColormap','GradientColormap']
+
 from ColorScale import ColorScaleDict as pyPASSColorScaleDict
 from matplotlib.colors import ListedColormap, hex2color, LinearSegmentedColormap
 

@@ -4,10 +4,10 @@
 model: CMAQ                                        #CAMx, CMAQ, or Testcase
 
 #Set the complete input path of where the model data is located from the NetCDFFile file (*.mrg.nc)
-input_path: /Users/valenal/SProjects/TestReaders/PHY/uhTMNS11n2_F2A.20060817.mrg.nc
+input_path: cmaq.mrg.nc
 
 #Set the complete output path of where the physical process plots are to be located
-output_path: /Users/valenal/Fig_scr
+output_path: figures
 
 begin_hour: False # False = begin_hour (CMAQ EndHour;CAMx Begin Hour)
 
@@ -66,7 +66,7 @@ Process:
         - [Conc_Initial, [INIT]]
         - [Emissions, [EMIS]]
         - [Chemistry, [CHEM]]
-        - [H_Trans, [XADV, YADV, HDIF]]
+        - [H_Trans, [HADV, HDIF]]
         - [V_Trans, [ZADV, VDIF]]
         - [Entrain, [VENT, VDET, HENT, HDET]]
         - [Deposit, [DDEP]]
@@ -74,8 +74,8 @@ Process:
 
 #Set the time range in the following format which includes year, julian day and hour
 time_slice: 
-        - [2006229, '01']
-        - [2006230, '00']
+        - [2001203, '07']
+        - [2006230, '18']
 
 #Set the time zone for output
 display_time_offset: -6
