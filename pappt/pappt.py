@@ -38,10 +38,7 @@ from pyPA.utils.sci_var import PseudoNetCDFFile,Pseudo2NetCDF
 from pyPA.utils.timetuple import timeadd, timerange
 from lagrangian import box_id,boxes
 
-try:
-    from Scientific.IO.NetCDF import NetCDFFile as ncf
-except:
-    from pynetcdf import NetCDFFile as ncf
+from pyPA.netcdf import NetCDFFile as ncf
     
 def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,irr_unitconversion=1,ipr_contribution=1,irr_contribution=1,normalizer=1,kaxis=1):
     """

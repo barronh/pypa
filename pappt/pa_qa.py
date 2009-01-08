@@ -8,7 +8,7 @@ __version__ = RevisionNum
 
 import sys
 from numpy import array, where, isnan, zeros, logical_and
-from pynetcdf import NetCDFFile as ncf
+from pyPA.netcdf import NetCDFFile as ncf
 from pyPA.utils.CAMxFiles import ipr,ipr_mem
 
 # Used to delimit species and process names

@@ -11,10 +11,7 @@ from pyPA.pappt.kvextract import tops2shape,vertcamx
 from pyPA.pappt.legacy import LegacyMerged,LegacyMergedCMAQ
 from pyPA.utils.ArrayTransforms import CenterTime
 from numpy import ones,zeros,array
-try:
-    from Scientific.IO.NetCDF import NetCDFFile as ncf
-except:
-    from pynetcdf import NetCDFFile as ncf
+from pyPA.netcdf import NetCDFFile as ncf
 import os,sys,yaml
 
 __all__ = ['camxshapemaker', 'LoadPAQAFromYAML', 'LoadPyPAFromYAML', 'template']

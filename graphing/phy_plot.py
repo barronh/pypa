@@ -9,7 +9,7 @@ __version__ = RevisionNum
 
 #site-packages
 import os,sys
-from pynetcdf import NetCDFFile as ncdf
+from pyPA.netcdf import NetCDFFile as ncdf
 from numpy import array,newaxis,zeros,arange
 from yaml import load
 from datetime import datetime,timedelta
