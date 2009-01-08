@@ -13,7 +13,7 @@ As an option, user also can define color for values beyond the tile intervals.
 For differece plot scales, user can define a "no difference" boundary
 and a color to return when abs(differences) are less than this value.
 """
-
+__all__ = ['colorscale']
 # python lib
 from warnings import warn
 from numarray import *

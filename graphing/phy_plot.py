@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+__all__ = ['phy_plot']
+
 HeadURL="$HeadURL$"
 ChangeDate = "$LastChangedDate$"
 RevisionNum= "$LastChangedRevision$"
@@ -17,8 +19,6 @@ from pychartdir import *
 from mx import DateTime
 import calendar as cal
 import pdb
-
-__all__ = ['phy_plot']
 
 # Object that takes a yaml file with several parameters which include time_slice, model, time_offsets, 
 # species and process desired, as well as input data.
