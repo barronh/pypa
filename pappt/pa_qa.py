@@ -1,3 +1,5 @@
+__all__ = ['PAdC']
+
 HeadURL="$HeadURL$"
 ChangeDate = "$LastChangedDate$"
 RevisionNum= "$LastChangedRevision$"
@@ -11,8 +13,6 @@ from pyPA.utils.CAMxFiles import ipr,ipr_mem
 
 # Used to delimit species and process names
 delim="_"
-
-__all__ = ['PAdC']
 
 def PAdC(pa_file,spc_list=None,prc_list=None,model=None,mechanism=None,init='INIT',final='FCONC',verbose=True):
     """PAdC

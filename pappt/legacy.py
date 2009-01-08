@@ -1,3 +1,5 @@
+__all__ = ['LegacyMerged', 'LegacyMergedCMAQ']
+
 HeadURL="$HeadURL$"
 ChangeDate = "$LastChangedDate$"
 RevisionNum= "$LastChangedRevision$"
@@ -13,8 +15,6 @@ try:
 except:
     from Scientific.IO.NetCDF import NetCDFFile as ncf
 from numpy import array
-
-__all__ = ['LegacyMerged', 'LegacyMergedCMAQ']
 
 def LegacyMerged(outpath,inpath):
     """

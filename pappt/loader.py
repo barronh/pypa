@@ -73,8 +73,16 @@ def LoadPAQAFromYAML(yamlfile):
     AddDefaults(job)
 
     pr_rr=eval(job.metawrapper)(job.files)
-    spc_iter=job.species
-    prc_iter=job.processes
+    try:
+        spc_iter=job.species
+    except:
+         spc_iter = [key for key in pr_rr.variables.keys() if key[:len(job.init_conc)+1] == job.init_conc + '_']
+    try:
+        prc_iter=job.processes
+    except:
+         prc_iter = [key[:key.rindex('_')-1] for key in pr_rr.variables.keys() if '_' in key]
+         
+
     from pyPA.pappt.pa_qa import PAdC
     PAdC(pr_rr,spc_list=job.species,prc_list=job.processes,model=job.model,mechanism=job.mechanism,verbose=True,init=job.init_conc,final=job.final_conc)
 
@@ -85,9 +93,20 @@ def LoadPyPAFromYAML(yamlfile):
     AddDefaults(job)
 
     pr_rr=eval(job.metawrapper)(job.files)
-    spc_iter=job.species
-    prc_iter=job.processes
-    rxn_iter=job.reactions
+    try:
+        spc_iter=job.species
+    except:
+         spc_iter = [key[len(job.init_conc)+1:] for key in pr_rr.variables.keys() if key[:len(job.init_conc)+1] == job.init_conc + '_']
+    try:
+        prc_iter=job.processes
+    except:
+        prc_iter = list(set([key[:key.rindex('_')] for key in pr_rr.variables.keys() if '_' in key and key[:2] != 'VD']))
+
+    try:
+        rxn_iter = job.reactions
+    except:
+        rxn_iter = [key for key in pr_rr.variables.keys() if key[:4] in ['RXN_','IRR_']]
+
     shape=array(pr_rr.variables[job.shape])
 
     # May be scalar
@@ -163,6 +182,9 @@ def LoadPyPAFromYAML(yamlfile):
     except:
         pass
     # END STEP 6: send old merge text file to standard out
+    if job.has_key('graphing_config'):
+        from pyPA.graphing.phy_plot import phy_plot
+        phy_plot(yaml.load(file(job.graphing_config)))
 
 def AddDefaults(job):
     try:

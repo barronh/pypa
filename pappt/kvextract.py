@@ -1,3 +1,5 @@
+__all__ = ['pbldiag', 'vertcamx', 'tops2shape', 'tops2hghts', 'pblhghts2tops']
+
 HeadURL="$HeadURL$"
 ChangeDate = "$LastChangedDate$"
 RevisionNum= "$LastChangedRevision$"
@@ -14,8 +16,6 @@ It also provides a method of converting the 3D grid to a 4D grid
 from numpy import logical_not, logical_or,logical_and,zeros,where,ones,newaxis,indices,array,arange
 from warnings import warn
 import unittest
-
-__all__ = ['pbldiag', 'vertcamx', 'tops2shape', 'tops2hghts', 'pblhghts2tops']
 
 def pbldiag(kvvar,kaxis=1,mintop=2):
     """

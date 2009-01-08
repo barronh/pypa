@@ -1,4 +1,25 @@
 # !/usr/bin/env python -i
+__doc__="""
+PAPPT is the Process Analysis Post Processing Tools
+These tools are composed of a driving function ext_mrg and
+a helper class extracted.
+
+ext_mrg fills an extracted object with rxn and process (for 
+specified reactions and species) information according to the
+shape, unit conversion, contribution, and normalizer variables 
+specified.  The extracted object contains extracted information
+that has been assigned to one of 5 boxes (NOCHG, VENT, VDET, 
+HENT, HDET).
+
+The extracted class provides an easy interface for categorizing
+spatial values into their contribution categories. (see boxes 
+above)  These categories can then be combined and normalized per
+user specified values to retrieve the contribution to each process
+"""
+
+__all__ = ['MergedWriter', 'box_id', 'boxes', 'ext_mrg', 'extracted']
+
+
 HeadURL="$HeadURL$"
 ChangeDate = "$LastChangedDate$"
 RevisionNum= "$LastChangedRevision$"
@@ -22,27 +43,6 @@ try:
 except:
     from pynetcdf import NetCDFFile as ncf
     
-__doc__="""
-PAPPT is the Process Analysis Post Processing Tools
-These tools are composed of a driving function ext_mrg and
-a helper class extracted.
-
-ext_mrg fills an extracted object with rxn and process (for 
-specified reactions and species) information according to the
-shape, unit conversion, contribution, and normalizer variables 
-specified.  The extracted object contains extracted information
-that has been assigned to one of 5 boxes (NOCHG, VENT, VDET, 
-HENT, HDET).
-
-The extracted class provides an easy interface for categorizing
-spatial values into their contribution categories. (see boxes 
-above)  These categories can then be combined and normalized per
-user specified values to retrieve the contribution to each process
-"""
-
-__all__ = ['MergedWriter', 'box_id', 'boxes', 'ext_mrg', 'extracted']
-
-
 def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,irr_unitconversion=1,ipr_contribution=1,irr_contribution=1,normalizer=1,kaxis=1):
     """
     ext_mrg is the drive horse and calls all the other functions and

@@ -1,0 +1,66 @@
+###### PA INPUT
+#### Process Analysis uses model generated Integrated Process and Reaction 
+#### Rates (IPR/IRR) to create a conceputually well mixed volume that can
+#### be analyzed to conceptually represent physical and chemical evolution.
+####
+#### There are 5 sections.  Commented options are optional.
+
+###############################################
+###### OUTPUT PATH                       ######
+###############################################
+#### outfile is the path for results
+outfile: cmaq.mrg.nc
+
+###############################################
+###### MODEL/MECHANISM IDENTIFICATION    ######
+###############################################
+#### models supported are cmaq, camx, wrfchem
+#### mechanisms supported cbivmech3
+model: cmaq
+mechanism: cb05_ae4_aq
+kaxis: 1
+###############################################
+###### INPUT FILES AND READERS           ######
+###############################################
+#### PA will extract all values it needs from a meta 
+#### object (metawrapper) that can reference all necessary
+#### files.  Each file provided should also include a reader
+#### function (e.g. ipr, irr, ncf, (lambda x: ncf(x,'r+')), 
+#### but will default to ncf
+metawrapper: cmaq_pa_master
+files: 
+  - [../data/cctm/CCTM_e3aPA_1.e3a, ncf]
+  - [../data/cctm/CCTM_e3aPA_2.e3a, ncf]
+  - [../data/cctm/CCTM_e3aIRR_1.e3a, ncf]
+  - [../data/cctm/CCTM_e3aIRR_2.e3a, ncf]
+  - [../data/cctm/CCTM_e3aCONC.e3a, ncf]
+  - [../derived/mcip3/METCRO3D_010722, ncf]
+  - [../derived/mcip3/METCRO2D_010722, ncf]
+
+###############################################
+###### PA META VARIABLES                 ######
+###############################################
+#### PA needs the name of variables to be used for the
+#### following purposes:
+####  - PA volume shape.  4-D array of booleans that include
+####    or exclude cells in IRR/IPR
+####  - Individual cell contribution to overall IRR/IPR weighted 
+####    averages (irr_contribution and ipr_contribution [defaults to 1])
+####  - Cell values to sum for normalization of IRR/IPR weighted
+####    averages (irr_normalizer and ipr_normalizer [defaults to irr/ipr_contribution])
+####  - Conversion of units (irr_unitconversion and ipr_unitconversion [defaults to 1])
+shape: DEFAULT_SHAPE
+init_conc: INIT
+final_conc: FCONC
+irr_contribution: AIRMOLS
+ipr_contribution: AIRMOLS
+normalizer: AIRMOLS
+irr_unitconversion: 1
+ipr_unitconversion: 1
+
+###############################################
+###### PA IRR/IPR VARIABES               ######
+###############################################
+#### optional: defaults to model/mechanism defaults
+
+graphing_config: cmaq_graphing.yaml
