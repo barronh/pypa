@@ -9,12 +9,13 @@ r"""
    data
 .. moduleauthor:: Barron Henderson <barronh@unc.edu>
 """
-__all__=['utils','pappt','graphing','run','qa']
+__all__=['utils','pappt','graphing']
 
-from pyPA.pappt.loader import LoadPyPAFromYAML as run, LoadPAQAFromYAML as qa, template
+#from pyPA.pappt.loader import LoadPyPAFromYAML as run, LoadPAQAFromYAML as qa, template
 try:
     from pyPA.testcase.test import run as test
 except:
+    raise
     def test():
         raise ValueError, "Testcase was not installed"
 
@@ -39,6 +40,7 @@ if __name__ == '__main__':
     
     (options, args) = parser.parse_args()
     if options.template:
+        from pyPA.pappt.loader import template
         template(options.model,options.mechanism)
         parser.exit()
     if len(args)<1:

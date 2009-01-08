@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from pyPA.utils.MetaNetCDF import add_derived,file_master,window,newresolution
-from pyPA.utils.sci_var import PseudoNetCDFFile, PseudoNetCDFVariable, PseudoNetCDFVariables, Pseudo2NetCDF
+from PseudoNetCDF.MetaNetCDF import file_master,window,newresolution
+from PseudoNetCDF.sci_var import PseudoNetCDFFile, PseudoNetCDFVariable, PseudoNetCDFVariables, Pseudo2NetCDF
 from pyPA.utils.util import AttrDict
 
 from pyPA.pappt.pappt import ext_mrg,MergedWriter
@@ -9,7 +9,7 @@ from pyPA.utils.CMAQTransforms import *
 from pyPA.utils.CAMxTransforms import *
 from pyPA.pappt.kvextract import tops2shape,vertcamx
 from pyPA.pappt.legacy import LegacyMerged,LegacyMergedCMAQ
-from pyPA.utils.ArrayTransforms import CenterTime
+from camxfiles.ArrayTransforms import CenterTime
 from numpy import ones,zeros,array
 from pyPA.netcdf import NetCDFFile as ncf
 import os,sys,yaml

@@ -147,7 +147,7 @@ if __name__ == '__main__':
         print '***and to choose where to store templates -i outpath for templates***'
     #TEST CASE
     elif sys.argv[1] == 'Testcase': 
-        from pyPA.utils.sci_var import PseudoNetCDFFile as pncf, PseudoNetCDFVariable as pncv
+        from PseudoNetCDF.sci_var import PseudoNetCDFFile as pncf, PseudoNetCDFVariable as pncv
         from numpy import array
         testfile=pncf()
         testfile.createDimension('SPECIES',1)

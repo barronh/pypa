@@ -34,8 +34,7 @@ from numpy import vstack, ones, where, zeros, \
                   indices, squeeze, array, nansum, \
                   nan,nanmin, nanmax,hstack,newaxis, \
                   arange,dtype,isnan,ndarray
-from pyPA.utils.sci_var import PseudoNetCDFFile,Pseudo2NetCDF
-from pyPA.utils.timetuple import timeadd, timerange
+from PseudoNetCDF.sci_var import PseudoNetCDFFile,Pseudo2NetCDF
 from lagrangian import box_id,boxes
 
 from pyPA.netcdf import NetCDFFile as ncf
