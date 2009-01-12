@@ -8,7 +8,7 @@ for pkg, reader in netcdf_pkgs:
         NetCDFFile = getattr(__import__(pkg, fromlist = [reader]),reader)
         break
     except ImportError, e:
-        warn(e.message)
+        #warn(e.message)
         pass
 else:
     raise ImportError, "Did not find a NetCDFFile object"

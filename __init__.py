@@ -15,7 +15,6 @@ __all__=['utils','pappt','graphing']
 try:
     from pyPA.testcase.test import run as test
 except:
-    raise
     def test():
         raise ValueError, "Testcase was not installed"
 
