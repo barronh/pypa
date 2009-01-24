@@ -22,7 +22,7 @@ import pdb
 
 # Object that takes a yaml file with several parameters which include time_slice, model, time_offsets, 
 # species and process desired, as well as input data.
-def phy_plot(job, ncfvariable= None):
+def phy_plot(job):
 
     #Checks which model is used and and load default template
     phy_path = os.path.dirname(os.path.realpath(__file__))
