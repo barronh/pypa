@@ -1,4 +1,4 @@
-"""
+__doc__ = """
 :mod:`pappt` -- Process Analysis Post-Processing Tools
 ======================================================
 

@@ -1,4 +1,4 @@
-"""
+__doc__ = """
 This module is intended to make pyPASS color scales 
 available for pyPA plotting.  pyPA plotting is mostly 
 based on matplotlib, but pyPASS plotting is based on 

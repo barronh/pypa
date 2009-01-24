@@ -1,4 +1,4 @@
-r"""
+__doc__ = r"""
 .. _pyPA
 :mod:`pyPA` -- Python-based Process Analysis
 ============================================

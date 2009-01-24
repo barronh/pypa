@@ -6,7 +6,7 @@ RevisionNum= "$LastChangedRevision$"
 ChangedBy  = "$LastChangedBy$"
 __version__ = RevisionNum
 
-"""
+__doc__ = """
 kvextract provides two methods of calculating the planetary boundary 
 level: pbldiag and vertcamx.  Each returns a 3D grid (Time, Row, Col).  
 It also provides a method of converting the 3D grid to a 4D grid 

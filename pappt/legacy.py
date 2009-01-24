@@ -6,7 +6,7 @@ RevisionNum= "$LastChangedRevision$"
 ChangedBy  = "$LastChangedBy$"
 __version__ = "$RevisionNum$"
 
-"""
+__doc__ = """
 Legacy is a module for converting new pappt outputs to old text based formats
 """
 

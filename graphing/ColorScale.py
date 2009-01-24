@@ -1,5 +1,5 @@
 #!/usr/bin/python
-""" colorscale.py version 0.11 2005-05-16 2005-05-22
+__doc__ = """ colorscale.py version 0.11 2005-05-16 2005-05-22
 Copyright Byeong-Uk Kim
 
 Modifed by HEJ, 2006-09-14 to add a 'no_difference' value and color 
