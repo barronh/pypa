@@ -59,7 +59,7 @@ def camxshapemaker(iprfile,hpfile=None,kvfile=None,outpath='shape.nc',pagrid=0):
     new_shape[1:,:,:,:]=shape
     new_shape[0,:,:,:]=shape[0,:,:,:]
     v=outfile.createVariable('SHAPE','b',('TSTEP','LAY','ROW','COL'))
-    v.assignValue(new_shape)
+    v[:] = new_shape
     v.units='ON/OFF'
     v.long_name=v.var_desc='SHAPE'.ljust(16)
 

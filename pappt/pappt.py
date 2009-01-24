@@ -330,10 +330,10 @@ class extracted(object):
         
         v=output.createVariable('IPR','f',('TSTEP','SPECIES','PROCESS'))
         v.units="ppmV/time"
-        v.assignValue(ipr_output)
+        v[:] = ipr_output
         v=output.createVariable('IRR','f',('TSTEP','RXN'))
         v.units="ppmV/time"
-        v.assignValue(irr_output)
+        v[:]= irr_output
         output.Process=''.join([i.ljust(16) for i in self.prc])
         output.Species=''.join([i.ljust(16) for i in self.spc])
         output.Reactions=''.join([i.ljust(16) for i in self.rxn])
@@ -364,7 +364,7 @@ def MergedWriter(outpath,ipr_irr,shape,tflag):
     ipr_irr.createDimension('VAR',3)
     ipr_irr.createDimension('DATE-TIME',2)
     shape_out=ipr_irr.createVariable('SHAPE','i',('TSTEP_STAG','LAY','ROW','COL'))
-    shape_out.assignValue(shape)
+    shape_out[...] = shape
     shape_out.units='onoff'
     shape_out.var_desc='SHAPE'.ljust(16)
     shape_out.long_name='SHAPE'.ljust(16)
