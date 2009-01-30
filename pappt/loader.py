@@ -9,7 +9,7 @@ from pyPA.utils.CMAQTransforms import *
 from pyPA.utils.CAMxTransforms import *
 from pyPA.pappt.kvextract import tops2shape,vertcamx
 from pyPA.pappt.legacy import LegacyMerged,LegacyMergedCMAQ
-from camxfiles.ArrayTransforms import CenterTime
+from PseudoNetCDF.ArrayTransforms import CenterTime
 from numpy import ones,zeros,array
 from pyPA.netcdf import NetCDFFile as ncf
 import os,sys,yaml

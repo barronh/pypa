@@ -8,10 +8,16 @@ __doc__ = """
    data
 .. moduleauthor:: Barron Henderson <barronh@unc.edu>
 """
-__all__=['pappt','lagrangian','loader','cmaqprep','pa_qa','legacy']
+__all__=['pappt', 'lagrangian', 'loader', 'pa_qa', 'legacy']
 
 HeadURL="$HeadURL$"
 ChangeDate = "$LastChangedDate$"
 RevisionNum= "$LastChangedRevision$"
 ChangedBy  = "$LastChangedBy$"
 __version__ = RevisionNum
+
+import pappt
+import lagrangian
+import loader
+import pa_qa
+import legacy

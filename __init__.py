@@ -9,14 +9,12 @@ __doc__ = r"""
    data
 .. moduleauthor:: Barron Henderson <barronh@unc.edu>
 """
-__all__=['utils','pappt','graphing']
+__all__=['utils','pappt','graphing', 'test']
+import utils
+import pappt
+import graphing
 
-#from pyPA.pappt.loader import LoadPyPAFromYAML as run, LoadPAQAFromYAML as qa, template
-try:
-    from pyPA.testcase.test import run as test
-except:
-    def test():
-        raise ValueError, "Testcase was not installed"
+from pyPA.test import run as test
 
 if __name__ == '__main__':
     from optparse import OptionParser

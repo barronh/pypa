@@ -1,4 +1,7 @@
-__all__=['ColorScale','pyPASSColorScales']
+__all__=['ColorScale','pyPASSColorScales', 'phy_plot']
+import ColorScale
+import pyPASSColorScales
+import phy_plot
 
 if __name__ == '__main__':
     from optparse import OptionParser
