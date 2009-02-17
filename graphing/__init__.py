@@ -1,9 +1,7 @@
-__all__=['ColorScale','pyPASSColorScales', 'phy_plot']
-import ColorScale
-import pyPASSColorScales
-import phy_plot
-
-if __name__ == '__main__':
+__all__=['phy_plot']
+if __name__ != '__main__':
+    import phy_plot    
+else:
     from optparse import OptionParser
     parser = OptionParser()
     parser.set_usage("Usage: %prog [-t] [-m <model>]  <yamlfile>")

@@ -10,13 +10,13 @@ __doc__ = r"""
 .. moduleauthor:: Barron Henderson <barronh@unc.edu>
 """
 __all__=['utils','pappt','graphing', 'test']
-import utils
-import pappt
-import graphing
-
-from pyPA.test import run as test
-
-if __name__ == '__main__':
+if __name__ != '__main__':
+    import utils
+    import pappt
+    import graphing
+    
+    from test import run as test
+else:
     from optparse import OptionParser
     parser = OptionParser()
     parser.set_usage("Usage: %prog [-tq] [-m <model>] [-c <mechanism>]\n"+(" "*16)+" [-i <init name>] [-f <final name>] <yamlfile>")

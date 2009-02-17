@@ -8,7 +8,7 @@ __doc__ = """
    data
 .. moduleauthor:: Barron Henderson <barronh@unc.edu>
 """
-__all__=['pappt', 'lagrangian', 'loader', 'pa_qa', 'legacy']
+__all__=['pappt', 'lagrangian', 'loader', 'pa_qa', 'legacy', 'kvextract']
 
 HeadURL="$HeadURL$"
 ChangeDate = "$LastChangedDate$"
@@ -21,3 +21,4 @@ import lagrangian
 import loader
 import pa_qa
 import legacy
+import kvextract
