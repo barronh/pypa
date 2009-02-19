@@ -10,7 +10,7 @@ __doc__ = """
 Legacy is a module for converting new pappt outputs to old text based formats
 """
 
-from pyPA.netcdf import NetCDFFile as ncf
+from ..netcdf import NetCDFFile as ncf
 from numpy import array
 
 def LegacyMerged(outpath,inpath):

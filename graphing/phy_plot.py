@@ -9,7 +9,7 @@ __version__ = RevisionNum
 
 #site-packages
 import os,sys
-from pyPA.netcdf import NetCDFFile as ncdf
+from ..netcdf import NetCDFFile as ncdf
 from numpy import array,newaxis,zeros,arange
 from yaml import load
 from datetime import datetime,timedelta
@@ -69,9 +69,9 @@ def phy_plot(job):
     
     dataX = range(sidx,eidx+1)
     if job['begin_hour'] == True:
-        timetemp.append(timetemp[-1]+.041666666666666666)
+        timetemp.append(timetemp[-1]+1/24.)
     else:
-        timetemp.insert(0,timetemp[0]-.041666666666666666)
+        timetemp.insert(0,timetemp[0]-1/24.)
     data_ins = range(len(dataX))
     data_step = range(len(dataX)+1)
     

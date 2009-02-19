@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 from PseudoNetCDF.MetaNetCDF import file_master,window,newresolution
 from PseudoNetCDF.sci_var import PseudoNetCDFFile, PseudoNetCDFVariable, PseudoNetCDFVariables, Pseudo2NetCDF
-from pyPA.utils.util import AttrDict
+from ..utils.util import AttrDict
 
-from pyPA.pappt.pappt import ext_mrg,MergedWriter
+from pappt import ext_mrg,MergedWriter
 from pyPA.utils.CAMxFiles import *
 from pyPA.utils.CMAQTransforms import *
 from pyPA.utils.CAMxTransforms import *
-from pyPA.pappt.kvextract import tops2shape,vertcamx
-from pyPA.pappt.legacy import LegacyMerged,LegacyMergedCMAQ
+from kvextract import tops2shape,vertcamx
+from legacy import LegacyMerged,LegacyMergedCMAQ
 from PseudoNetCDF.ArrayTransforms import CenterTime
 from numpy import ones,zeros,array
-from pyPA.netcdf import NetCDFFile as ncf
+from ..netcdf import NetCDFFile as ncf
 import os,sys,yaml
 
 __all__ = ['camxshapemaker', 'LoadPAQAFromYAML', 'LoadPyPAFromYAML', 'template']
@@ -80,7 +80,7 @@ def LoadPAQAFromYAML(yamlfile):
          prc_iter = [key[:key.rindex('_')-1] for key in pr_rr.variables.keys() if '_' in key]
          
 
-    from pyPA.pappt.pa_qa import PAdC
+    from pa_qa import PAdC
     PAdC(pr_rr,spc_list=job.species,prc_list=job.processes,model=job.model,mechanism=job.mechanism,verbose=True,init=job.init_conc,final=job.final_conc)
 
 def LoadPyPAFromYAML(yamlfile):
@@ -180,7 +180,7 @@ def LoadPyPAFromYAML(yamlfile):
         pass
     # END STEP 6: send old merge text file to standard out
     if job.has_key('graphing_config'):
-        from pyPA.graphing.phy_plot import phy_plot
+        from ..graphing.phy_plot import phy_plot
         phy_plot(yaml.load(file(job.graphing_config)))
 
 def AddDefaults(job):

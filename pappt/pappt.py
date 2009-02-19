@@ -37,7 +37,7 @@ from numpy import vstack, ones, where, zeros, \
 from PseudoNetCDF.sci_var import PseudoNetCDFFile,Pseudo2NetCDF
 from lagrangian import box_id,boxes
 
-from pyPA.netcdf import NetCDFFile as ncf
+from ..netcdf import NetCDFFile as ncf
     
 def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,irr_unitconversion=1,ipr_contribution=1,irr_contribution=1,normalizer=1,kaxis=1):
     """

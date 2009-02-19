@@ -23,5 +23,5 @@ else:
         parser.exit()
     else:
         import yaml
-        from pyPA.graphing.phy_plot import phy_plot
+        from phy_plot import phy_plot
         phy_plot(yaml.load(file(args[0])))

@@ -8,7 +8,7 @@ __version__ = RevisionNum
 
 import unittest
 from numpy import indices,zeros,nanmax,nanmin,nansum,where,vstack,squeeze,nan
-from pyPA.utils.util import AttrDict
+from ..utils.util import AttrDict
 
 box_id=AttrDict({'NOCHG': 0, 'VENT': 1, 'VDET': 2, 'HENT': 3, 'HDET': 4})
 def kvals(shape,kaxis):
