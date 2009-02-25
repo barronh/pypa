@@ -1,4 +1,5 @@
 from distutils.core import setup
+from setuptools import setup
 import os
 import sys
 from warnings import warn
@@ -8,7 +9,7 @@ netcdf_pkgs = [('pynetcdf', 'NetCDFFile'), ('netCDF3', 'Dataset'), \
 for pkg, reader in netcdf_pkgs:
     try:
         NetCDFFile = getattr(__import__(pkg, fromlist = [reader]),reader)
-        print >> file(os.path.join('pyPA','netcdf.py'),'wb'), """
+        print >> file(os.path.join('src', 'pyPA','netcdf.py'),'wb'), """
 __all__ = ['NetCDFFile']
 __doc__ = \"\"\"
 .. _netcdf
@@ -37,5 +38,6 @@ setup(name = 'pyPA',
       maintainer = 'Barron Henderson',
       maintainer_email = 'barronh@gmail.com',
       packages = ['pyPA', 'pyPA/pappt', 'pyPA/utils', 'pyPA/graphing'],
+      package_dir = {'': 'src'},
       requires = [pkg, 'numpy (>=0.9)', 'yaml', 'PseudoNetCDF', 'PseudoNetCDF.camxfiles']
       )
