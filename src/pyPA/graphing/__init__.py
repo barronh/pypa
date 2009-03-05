@@ -1,6 +1,6 @@
-__all__=['phy_plot']
+__all__=['timeseries', 'barplot']
 if __name__ != '__main__':
-    import phy_plot    
+    import timeseries
 else:
     from optparse import OptionParser
     parser = OptionParser()
@@ -23,5 +23,5 @@ else:
         parser.exit()
     else:
         import yaml
-        from phy_plot import phy_plot
+        from timeseries import phy_plot
         phy_plot(yaml.load(file(args[0])))
