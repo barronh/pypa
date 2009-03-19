@@ -15,7 +15,7 @@ from pyPA.netcdf import NetCDFFile
 from PseudoNetCDF.sci_var import PseudoNetCDFFile
 from numpy import array, concatenate, zeros, arange
 from pylab import figure, title, plot_date, savefig, legend, axis, grid, axes, xlabel, ylabel, subplot
-from matplotlib.dates import DateFormatter
+from matplotlib.dates import DateFormatter, date2num
 from matplotlib.cm import get_cmap
 from matplotlib.font_manager import FontProperties
 import re
@@ -33,13 +33,13 @@ def get_date(mrg_file, conf):
     date_objs = date_objs.repeat(2,0)[1:-1]
     return date_objs
 
-def chem_plot(conf, mech, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
+def rxn_plot(conf, mech, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
     units = mech.irr.units
     
     colors = iter(get_cmap(cmap)(arange(nlines, dtype = 'f')/(nlines-1)))
     if fig is None:
         fig = figure()
-    ax = axes([0.1,0.4,.8,.5])
+    ax = axes([0.1,0.4,.8,.5], **species_options)
     grid(True)
     title(conf.title % locals())
     species_obj = mech(species)
@@ -81,31 +81,107 @@ def chem_plot(conf, mech, date_objs, species, species_options, nlines, combine, 
 
     xlabel('Time')
     ylabel(units)
-    ax.xaxis.set_major_formatter(DateFormatter('%H'))
+    ax.xaxis.set_major_formatter(DateFormatter('%jT%H'))
+    ax.set_xlim(date2num(date_objs[0]), date2num(date_objs[-1]))
+    if species_options.has_key('ylim'):
+        ax.set_ylim(*species_options['ylim'])
+
     fig.autofmt_xdate()
     
     legend(loc=(0,-0.8), prop = FontProperties(size=10))
     return fig
 
-def chem_plots(conf, nlines = 8, combine = [()], fmt = 'pdf'):
-    mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
-    tz = {'cmaq': 'UTC', 'camx': 'LST'}[conf.model.lower()]
-    
-    if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
-        mrg_file = conf.mrgfile
+def rxn_plots(conf, nlines = 8, combine = [()], fmt = 'pdf'):
+    if conf.has_key('mech'):
+        mech = conf.mech
     else:
-        mrg_file = NetCDFFile(conf.mrgfile,'r')
-	
+        mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
+        if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
+            mrg_file = conf.mrgfile
+        else:
+            mrg_file = NetCDFFile(conf.mrgfile,'r')
+        
+        mech.set_mrg(mrg_file)
     
-    mech.set_mrg(mrg_file)
+
+    tz = {'camx': 'LST'}.get(conf.model.lower(),'UTC')
     
-    date_objs = get_date(mrg_file, conf)
+    date_objs = get_date(mech.mrg, conf)
     
     for species, species_options in conf.species.iteritems():
-        if species == 'NTR1':
-            import pdb; pdb.set_trace()
-        fig = chem_plot(conf, mech, date_objs, species, species_options, nlines = nlines, combine = combine)
+        fig = rxn_plot(conf, mech, date_objs, species, species_options, nlines = nlines, combine = combine)
         savefig(os.path.join(conf.outdir, '%s_IRR.%s' % (species, fmt)), format = fmt)
+
+
+def chem_plot(conf, mech, date_objs, species, species_options, fig = None, cmap = None):
+    units = mech.irr.units
+    
+    colors = iter(get_cmap(cmap)(arange(2, dtype = 'f')))
+    if fig is None:
+        fig = figure()
+    ax = axes(**species_options)
+
+    grid(True)
+    title(conf.title % locals())
+    species_obj = mech(species)
+    producers = mech.make_net_rxn([], species_obj, True)
+    consumers = mech.make_net_rxn(species_obj, [], True)
+    
+    options = {}
+    options.setdefault('linestyle', '-')
+    options.setdefault('linewidth', 3)
+    options.setdefault('marker', 'None')
+
+    options['color'] = colors.next()
+    options['label'] = '$\mathit{P}$'
+    plot_date(date_objs, producers[species_obj].repeat(2,0), **options)
+
+    options['color'] = colors.next()
+    options['label'] = '$\mathit{L}$'
+    plot_date(date_objs, consumers[species_obj].repeat(2,0), **options)
+    
+    options['color'] = 'black'
+    options['marker'] = 'o'
+    options['label'] = 'Chem'
+    try:
+        data = mech('%s[%s]'  % (conf.chem, species)).array()
+    except:
+        warn('Using sum of reactions for %(species)s' % locals())
+        data = (producers + consumers)[species_obj]
+
+    plot_date(date_objs, data.repeat(2,0), **options)
+
+    xlabel('Time')
+    ylabel(units)
+    ax.xaxis.set_major_formatter(DateFormatter('%jT%H'))
+    ax.set_xlim(date2num(date_objs[0]), date2num(date_objs[-1]))
+    if species_options.has_key('ylim'):
+        ax.set_ylim(*species_options['ylim'])
+
+    fig.autofmt_xdate()
+    
+    legend(prop = FontProperties(size=10))
+    return fig
+
+def chem_plots(conf, fmt = 'pdf'):
+    if conf.has_key('mech'):
+        mech = conf.mech
+    else:
+        mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
+        if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
+            mrg_file = conf.mrgfile
+        else:
+            mrg_file = NetCDFFile(conf.mrgfile,'r')
+	
+        mech.set_mrg(mrg_file)
+    
+    tz = {'camx': 'LST'}.get(conf.model.lower(),'UTC')
+        
+    date_objs = get_date(mech.mrg, conf)
+    
+    for species, species_options in conf.species.iteritems():
+        fig = chem_plot(conf, mech, date_objs, species, species_options)
+        savefig(os.path.join(conf.outdir, '%s_CHEM.%s' % (species, fmt)), format = fmt)
 
 def phy_plot(conf, mech, date_objs, species, species_options, fig = None, cmap = None):
     """
@@ -122,6 +198,9 @@ def phy_plot(conf, mech, date_objs, species, species_options, fig = None, cmap =
 
     if fig is None:
         fig = figure()
+    
+    ax = axes(**species_options)
+
     grid(True)
     title(conf.title % locals())
     options = {'color': 'k'}
@@ -145,27 +224,34 @@ def phy_plot(conf, mech, date_objs, species, species_options, fig = None, cmap =
         data = mech('(%s)[%s]' % (process, species)).array().repeat(2,0)
         if data.nonzero()[0].any() or not filter:
             plot_date(date_objs, data, **options)
-    axis(**species_options)
-    ax = axes()
+            
     xlabel('Time')
     ylabel(units)
-    ax.xaxis.set_major_formatter(DateFormatter('%H'))
+    ax.xaxis.set_major_formatter(DateFormatter('%jT%H'))
+    ax.set_xlim(date2num(date_objs[0]), date2num(date_objs[-1]))
+    if species_options.has_key('ylim'):
+        ax.set_ylim(*species_options['ylim'])
+
     fig.autofmt_xdate()
     legend()
     return fig
 
 def phy_plots(conf, filter = True, fmt = 'pdf'):
-    mech = get_pure_mech('_'.join([conf.mechanism,conf.model]))
-
-    if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
-        mrg_file = conf.mrgfile
+    if conf.has_key('mech'):
+        mech = conf.mech
     else:
-        mrg_file = NetCDFFile(conf.mrgfile, 'r')
-    
-    mech.set_mrg(mrg_file)
+        mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
+        if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
+            mrg_file = conf.mrgfile
+        else:
+            mrg_file = NetCDFFile(conf.mrgfile, 'r')
+        
+        mech.set_mrg(mrg_file)
     
     units = mech.ipr.units
-    date_objs = get_date(mrg_file, conf)
+
+    date_objs = get_date(mech.mrg, conf)
+
     for species, species_options in conf.species.iteritems():
         try:
             fig = phy_plot(conf, mech,  date_objs, species, species_options)
@@ -185,6 +271,7 @@ if __name__ == '__main__':
                         NOyN={},
                         NTR={}
                         )
+    conf.species = dict(NOyN={})
     conf.process = {'H_Trans': {}, 
                     'V_Trans': {},
                     'Emissions': {},
@@ -201,6 +288,8 @@ if __name__ == '__main__':
     conf.outdir = '.'
     conf.end_date = True
     phy_plots(conf)
-#    chem_plot(conf, combine = [('RXN_01', 'RXN_02', 'RXN_03')])
+#    rxn_plot(conf, combine = [('RXN_01', 'RXN_02', 'RXN_03')])
     conf.title = '%(species)s IRR plot'
+    rxn_plots(conf)
+    conf.title = '%(species)s Chem plot'
     chem_plots(conf)
