@@ -1,4 +1,3 @@
-#!/usr/bin/python
 __doc__ = """ colorscale.py version 0.11 2005-05-16 2005-05-22
 Copyright Byeong-Uk Kim
 
