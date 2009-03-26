@@ -34,6 +34,22 @@ def get_date(mrg_file, conf):
     return date_objs
 
 def rxn_plot(conf, mech, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
+    species_obj = mech(species)
+    reactions = mech.find_rxns(species_obj, species_obj, False)
+    irr_plot(conf, mech, reactions, date_objs, species, species_options, nlines, combine, fig, cmap)
+
+def prod_plot(conf, mech, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
+    species_obj = mech(species)
+    reactions = mech.find_rxns([], species_obj, True)
+    irr_plot(conf, mech, reactions, date_objs, species, species_options, nlines, combine, fig, cmap)
+
+def loss_plot(conf, mech, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
+    species_obj = mech(species)
+    reactions = mech.find_rxns(species_obj, [], True)
+    irr_plot(conf, mech, reactions, date_objs, species, species_options, nlines, combine, fig, cmap)
+
+
+def irr_plot(conf, mech, reactions, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
     units = mech.irr.units
     
     colors = iter(get_cmap(cmap)(arange(nlines, dtype = 'f')/(nlines-1)))
@@ -43,7 +59,6 @@ def rxn_plot(conf, mech, date_objs, species, species_options, nlines, combine, f
     grid(True)
     title(conf.title % locals())
     species_obj = mech(species)
-    reactions = mech.find_rxns(species_obj, species_obj, False)
     reactions = [ rxn for rxn in reactions if rxn not in reduce(operator.add, combine) ]
     if combine != [()]:
         reactions = reactions + map(lambda t2: '+'.join(t2), combine)
@@ -91,7 +106,23 @@ def rxn_plot(conf, mech, date_objs, species, species_options, nlines, combine, f
     legend(loc=(0,-0.8), prop = FontProperties(size=10))
     return fig
 
-def rxn_plots(conf, nlines = 8, combine = [()], fmt = 'pdf'):
+def rxn_plot(conf, mech, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
+    species_obj = mech(species)
+    reactions = mech.find_rxns(species_obj, species_obj, False)
+    irr_plot(conf, mech, reactions, date_objs, species, species_options, nlines, combine, fig, cmap)
+
+def prod_plot(conf, mech, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
+    species_obj = mech(species)
+    reactions = mech.find_rxns([], species_obj, True)
+    irr_plot(conf, mech, reactions, date_objs, species, species_options, nlines, combine, fig, cmap)
+
+def loss_plot(conf, mech, date_objs, species, species_options, nlines, combine, fig = None, cmap = None):
+    species_obj = mech(species)
+    reactions = mech.find_rxns(species_obj, [], True)
+    irr_plot(conf, mech, reactions, date_objs, species, species_options, nlines, combine, fig, cmap)
+
+
+def irr_plots(conf, nlines = 8, combine = [()], fmt = 'pdf', fig_name = "RXN", plot_func = rxn_plot):
     if conf.has_key('mech'):
         mech = conf.mech
     else:
@@ -109,8 +140,17 @@ def rxn_plots(conf, nlines = 8, combine = [()], fmt = 'pdf'):
     date_objs = get_date(mech.mrg, conf)
     
     for species, species_options in conf.species.iteritems():
-        fig = rxn_plot(conf, mech, date_objs, species, species_options, nlines = nlines, combine = combine)
-        savefig(os.path.join(conf.outdir, '%s_IRR.%s' % (species, fmt)), format = fmt)
+        fig = plot_func(conf, mech, date_objs, species, species_options, nlines = nlines, combine = combine)
+        savefig(os.path.join(conf.outdir, '%s_%s.%s' % (species, fig_name, fmt)), format = fmt)
+
+def rxn_plots(conf, nlines = 8, combine = [()], fmt = 'pdf'):
+    irr_plots(conf, nlines, combine, fmt, fig_name = 'RXN', plot_func = rxn_plot)
+
+def loss_plots(conf, nlines = 8, combine = [()], fmt = 'pdf'):
+    irr_plots(conf, nlines, combine, fmt, fig_name = 'LOSS', plot_func = loss_plot)
+
+def prod_plots(conf, nlines = 8, combine = [()], fmt = 'pdf'):
+    irr_plots(conf, nlines, combine, fmt, fig_name = 'PROD', plot_func = prod_plot)
 
 
 def chem_plot(conf, mech, date_objs, species, species_options, fig = None, cmap = None):
