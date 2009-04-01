@@ -18,6 +18,7 @@ if __name__ != '__main__':
     from test import run as test
 else:
     from optparse import OptionParser
+    from pyPA.pappt.loader import LoadPyPAFromYAML as run
     parser = OptionParser()
     parser.set_usage("Usage: %prog [-tq] [-m <model>] [-c <mechanism>]\n"+(" "*16)+" [-i <init name>] [-f <final name>] <yamlfile>")
     parser.add_option("-q", "--qa", dest="qa",action="store_true",default=False,
