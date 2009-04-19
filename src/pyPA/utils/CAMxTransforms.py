@@ -29,7 +29,7 @@ from PseudoNetCDF.sci_var import PseudoNetCDFFile, \
 
 class point_source_newvarnames(PseudoNetCDFFile):
     __childclass__=reg_point_source
-    __newvars__=['ptCO','ptNO','ptNO2','ptALD2','ptETH','ptFORM','ptISOP','ptNR','ptOLE','ptPAR','ptTOL','ptXYL', 'ptNH3', 'ptSO2', 'ptSULF', 'ptPEC','ptPNO3','ptPOA','ptPSO4','ptETOH','ptMEOH']
+    __newvars__=['ptCO','ptNO','ptNO2','ptALD2','ptALDX','ptETH','ptETHA','ptFORM','ptISOP','ptNR','ptOLE','ptIOLE','ptPAR','ptTOL','ptXYL', 'ptNH3', 'ptSO2', 'ptSULF', 'ptPEC','ptPNO3','ptPOA','ptPSO4','ptETOH','ptMEOH']
     __oldvars__=['XSTK','YSTK','HSTK']  
     def __init__(self,rffile):
         self.__child=self.__childclass__(rffile)
