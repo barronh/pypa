@@ -1,5 +1,5 @@
 from distutils.core import setup
-from setuptools import setup
+#from setuptools import setup
 import os
 import sys
 from warnings import warn
@@ -39,5 +39,7 @@ setup(name = 'pyPA',
       maintainer_email = 'barronh@gmail.com',
       packages = ['pyPA', 'pyPA/pappt', 'pyPA/utils', 'pyPA/graphing'],
       package_dir = {'': 'src'},
-      requires = [pkg, 'numpy (>=0.9)', 'yaml', 'PseudoNetCDF', 'PseudoNetCDF.camxfiles']
+      package_data = {'pyPA': ['pappt/defaults/*.yaml']},
+      requires = [pkg, 'numpy (>=0.9)', 'yaml', 'PseudoNetCDF', 'PseudoNetCDF.camxfiles'],
+      url = 'https://dawes.sph.unc.edu/trac/pyPA'
       )
