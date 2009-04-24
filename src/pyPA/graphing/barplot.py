@@ -1,5 +1,4 @@
 from warnings import warn
-from net_balance import get_pure_mech
 from pylab import figure, title, bar, savefig, legend, grid, xlabel, ylabel, xticks, axis
 from matplotlib.cm import get_cmap
 from matplotlib.colors import rgb2hex
@@ -77,6 +76,7 @@ def profile_process(mech, species_group, process, loc = 1, width = .8, sort = Fa
     return fig
     
 if __name__ == '__main__':
+    from net_balance import get_pure_mech
     conf = AttrDict()
     conf.mechanism = 'cb05'
     conf.model = 'camx'
