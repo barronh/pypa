@@ -25,7 +25,7 @@ def add_mech(conf):
     if conf.has_key('mech'):
         mech = conf.mech
     else:
-	from net_balance import get_pure_mech
+		from net_balance import get_pure_mech
         mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
         if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
             mrg_file = conf.mrgfile
@@ -216,7 +216,7 @@ def chem_plots(conf, fmt = 'pdf'):
         fig = chem_plot(conf, mech, date_objs, species, species_options)
         savefig(os.path.join(conf.outdir, '%s_CHEM.%s' % (species, fmt)), format = fmt)
 
-def phy_plot(conf, mech, date_objs, species, species_options, fig = None, cmap = None):
+def phy_plot(conf, mech, date_objs, species, species_options, filter = True, fig = None, cmap = None):
     """
     conf - configuration obect that has title, 
            init, final, process, and species
@@ -278,7 +278,7 @@ def phy_plots(conf, filter = True, fmt = 'pdf'):
 
     for species, species_options in conf.species.iteritems():
         try:
-            fig = phy_plot(conf, mech,  date_objs, species, species_options)
+            fig = phy_plot(conf, mech,  date_objs, species, species_options, filter = filter)
             fig.savefig(os.path.join(conf.outdir, '%s_IPR.%s' % (species, fmt)), format = fmt)
         except KeyError, detail:
             warn(detail)
