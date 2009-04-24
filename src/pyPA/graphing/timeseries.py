@@ -7,7 +7,6 @@ ChangedBy  = "$LastChangedBy$"
 __version__ = RevisionNum
 
 from warnings import warn
-from net_balance import get_pure_mech
 from datetime import datetime
 from pyPA.utils.util import AttrDict
 from types import InstanceType
@@ -21,6 +20,19 @@ from matplotlib.font_manager import FontProperties
 import re
 import operator
 import os
+
+def add_mech(conf):
+    if conf.has_key('mech'):
+        mech = conf.mech
+    else:
+	from net_balance import get_pure_mech
+        mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
+        if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
+            mrg_file = conf.mrgfile
+        else:
+            mrg_file = NetCDFFile(conf.mrgfile,'r')
+
+        mech.set_mrg(mrg_file)
 
 def get_date(mrg_file, conf):
     date_ints = mrg_file.variables['TFLAG'][:,0,:]
@@ -123,17 +135,7 @@ def loss_plot(conf, mech, date_objs, species, species_options, nlines, combine, 
 
 
 def irr_plots(conf, nlines = 8, combine = [()], fmt = 'pdf', fig_name = "RXN", plot_func = rxn_plot):
-    if conf.has_key('mech'):
-        mech = conf.mech
-    else:
-        mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
-        if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
-            mrg_file = conf.mrgfile
-        else:
-            mrg_file = NetCDFFile(conf.mrgfile,'r')
-        
-        mech.set_mrg(mrg_file)
-    
+    add_mech(conf)
 
     tz = {'camx': 'LST'}.get(conf.model.lower(),'UTC')
     
@@ -204,16 +206,7 @@ def chem_plot(conf, mech, date_objs, species, species_options, fig = None, cmap 
     return fig
 
 def chem_plots(conf, fmt = 'pdf'):
-    if conf.has_key('mech'):
-        mech = conf.mech
-    else:
-        mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
-        if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
-            mrg_file = conf.mrgfile
-        else:
-            mrg_file = NetCDFFile(conf.mrgfile,'r')
-	
-        mech.set_mrg(mrg_file)
+    add_mech(conf)
     
     tz = {'camx': 'LST'}.get(conf.model.lower(),'UTC')
         
@@ -277,16 +270,7 @@ def phy_plot(conf, mech, date_objs, species, species_options, fig = None, cmap =
     return fig
 
 def phy_plots(conf, filter = True, fmt = 'pdf'):
-    if conf.has_key('mech'):
-        mech = conf.mech
-    else:
-        mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
-        if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
-            mrg_file = conf.mrgfile
-        else:
-            mrg_file = NetCDFFile(conf.mrgfile, 'r')
-        
-        mech.set_mrg(mrg_file)
+    add_mech(conf)
     
     units = mech.ipr.units
 
