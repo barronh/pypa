@@ -25,7 +25,7 @@ def add_mech(conf):
     if conf.has_key('mech'):
         mech = conf.mech
     else:
-		from net_balance import get_pure_mech
+        from net_balance import get_pure_mech
         mech = conf.mech = get_pure_mech('_'.join([conf.mechanism.lower(),conf.model.lower()]))
         if isinstance(conf.mrgfile, (PseudoNetCDFFile, InstanceType)):
             mrg_file = conf.mrgfile
