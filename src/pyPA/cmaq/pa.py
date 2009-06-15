@@ -3,7 +3,7 @@ from PseudoNetCDF.sci_var import PseudoNetCDFFile
 from PseudoNetCDF.MetaNetCDF import file_master
 from warnings import warn
 
-def mrgidx(ipr_paths, irr_paths, idx):
+def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
     if isinstance(irr_paths,str):
         irrf = NetCDFFile(irr_paths)
     else:
@@ -14,10 +14,21 @@ def mrgidx(ipr_paths, irr_paths, idx):
     else:
         iprf = file_master([NetCDFFile(ipr_path) for ipr_path in ipr_paths])
         
+    if conc_paths is None:
+        concf = None
+    elif isinstance(conc_paths,str):
+        concf = NetCDFFile(conc_paths)
+    else:
+        concsf = file_master([NetCDFFile(conc_path) for conc_path in conc_paths])
+        
     
     # Process and Reaction keys should exclude TFLAG
     pr_keys = [pr for pr in iprf.variables.keys() if pr not in ('TFLAG',)]
     rr_keys = [rr for rr in irrf.variables.keys() if rr not in ('TFLAG',)]
+    try:
+        conc_keys = [c for c in concf.variables.keys() if c not in ('TFLAG',)]
+    except:
+        conc_keys = []
     
     # Attempt to order reactions by number
     # this is not necessary, but is nice and clean
@@ -29,7 +40,7 @@ def mrgidx(ipr_paths, irr_paths, idx):
         warn("Cannot sort reaction keys")
     
     # Processes are predicated by a delimiter
-    prcs = list(set(['_'.join(pr.split('_')[:-1]) for pr in pr_keys]))
+    prcs = ['INIT']+list(set(['_'.join(pr.split('_')[:-1]) for pr in pr_keys]))+['FCONC']
     # Species are preceded by a delimiter
     spcs = list(set(['_'.join(pr.split('_')[-1:]) for pr in pr_keys]))
     
@@ -66,13 +77,20 @@ def mrgidx(ipr_paths, irr_paths, idx):
     for rr, var in zip(rr_keys,irr.swapaxes(0,1)):
         var[:] = irrf.variables[rr][:][idx]
         
-    for prc, prcvar in zip(prcs,ipr.swapaxes(0,2)):
+    for prc, prcvar in zip(prcs,ipr.swapaxes(0,2)[1:-1]):
         for spc, spcvar in zip(spcs,prcvar):
             try:
                 spcvar[:] = iprf.variables['_'.join([prc,spc])][:][idx]
             except KeyError, es:
                 warn(str(es))
-
+    if concf is not None:
+        for prc_slice, prcvar in zip([slice(0,-1), slice(1,None)], ipr.swapaxes(0,2)[[1,-1]]):
+            for spc, spcvar in zip(spcs,prcvar):
+                if concf.variables.kas_key():
+                    spcvar[:] = concf.variables[spc][prc_slice]
+                else:
+                    warn("No concentration given for %s" % spc)
+            
     return outf
     
 if __name__ == '__main__':
@@ -84,4 +102,5 @@ if __name__ == '__main__':
     try:
         pncdump(eval('mrgidx(%s)' % (x,)), name = mrgidx)
     except:
-        print >> sys.stderr, "\nUsage: python -m pyPA.cmaq.pa \"ipr_paths, irr_paths, idx\"\n  ipr_paths - a single string or list of strings\n  irr_paths - a single string or list of strings\n  idx - 4D numpy slice indexes a time series\n\n\nExample:\n  $ python -m PseudoNetCDF.cmaqfiles.pa \"['CMAQ_IPR1.nc','CMAQ_IPR2.nc'], 'CMAQ_IRR.nc', (slice(None),0,1,1)\""
+        print >> sys.stderr, "\nUsage: python -m pyPA.cmaq.pa \"ipr_paths, irr_paths, idx, conc_paths\"\n  ipr_paths - a single string or list of strings\n  irr_paths - a single string or list of strings\n  idx - 4D numpy slice indexes a time series\n  conc_paths - a single string or list of strings\n\n\nExample:\n  $ python -m pyPA.cmaqfiles.pa \"['CMAQ_IPR1.nc','CMAQ_IPR2.nc'], 'CMAQ_IRR.nc', (slice(None),0,1,1)\""
+        raise

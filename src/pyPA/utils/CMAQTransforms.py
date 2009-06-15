@@ -3,7 +3,7 @@ __all__ = ['time_avg_new_unit', 'wind_center_time_cell', 'pypass_cmaq_met_master
 from numpy import array,ones
 from PseudoNetCDF.MetaNetCDF import add_derived, \
                                   file_master
-from ..netcdf import NetCDFFile as ncf
+from ..netcdf import NetCDFFile
 from PseudoNetCDF.ArrayTransforms import CenterCMAQWind, \
                                        CenterTime
 from PseudoNetCDF.units import F2K
