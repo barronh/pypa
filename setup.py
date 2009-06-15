@@ -31,15 +31,42 @@ from %s import %s as NetCDFFile
 else:
     raise ImportError, "Did not find a NetCDFFile object"
 
+def find_packages():
+    import os
+    packages = []
+    walker = os.walk('src')
+    prefix = os.path.join(os.path.curdir,'src')
+    for thisdir, itsdirs, itsfiles in walker:
+        if '__init__.py' in itsfiles:
+            packages.append(thisdir[len(prefix)-1:])
+    
+    return packages
+            
+def find_data():
+    import os
+    import re
+    data_pattern = re.compile(r'.*(.|_)(yaml|nc|net|irr|phy|ptb|sum|voc|txt|xls|graffle)$')
+    data = []
+    prefix = os.path.join(os.path.curdir,'src', 'PseudoNetCDF')
+    walker = os.walk('src')
+    for thisdir, itsdirs, itsfiles in walker:
+        if thisdir != os.path.join('src','PseudoNetCDF.egg-info'):
+            data.extend([os.path.join(thisdir[len(prefix)-1:],f) for f in itsfiles if data_pattern.match(f) is not None])
+    
+    return data
+
+packages = find_packages()
+data = find_data()
+
 setup(name = 'pyPA',
-      version = '1.0',
+      version = '1.0rc',
       author = 'Barron Henderson',
       author_email = 'barronh@gmail.com',
       maintainer = 'Barron Henderson',
       maintainer_email = 'barronh@gmail.com',
-      packages = ['pyPA', 'pyPA/pappt', 'pyPA/utils', 'pyPA/graphing'],
+      packages = packages,
       package_dir = {'': 'src'},
-      package_data = {'pyPA': ['pappt/defaults/*.yaml']},
-      requires = [pkg, 'numpy (>=0.9)', 'yaml', 'PseudoNetCDF', 'PseudoNetCDF.camxfiles'],
+      package_data = {'pyPA': data},
+      requires = [pkg, 'numpy (>=1.2)', 'yaml', 'PseudoNetCDF'],
       url = 'https://dawes.sph.unc.edu/trac/pyPA'
       )
