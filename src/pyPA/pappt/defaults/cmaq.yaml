@@ -63,4 +63,3 @@ ipr_unitconversion: 1
 ###############################################
 #### optional: defaults to model/mechanism defaults
 
-graphing_config: cmaq_graphing.yaml

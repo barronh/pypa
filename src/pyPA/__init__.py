@@ -9,11 +9,11 @@ __doc__ = r"""
    data
 .. moduleauthor:: Barron Henderson <barronh@unc.edu>
 """
-__all__=['utils','pappt','graphing', 'test']
+__all__=['utils','pappt', 'test']
 if __name__ != '__main__':
     import utils
     import pappt
-    import graphing
+    import cmaq
     
     from test import run as test
 else:

@@ -179,9 +179,6 @@ def LoadPyPAFromYAML(yamlfile):
     except:
         pass
     # END STEP 6: send old merge text file to standard out
-    if job.has_key('graphing_config'):
-        from ..graphing.phy_plot import phy_plot
-        phy_plot(yaml.load(file(job.graphing_config)))
 
 def AddDefaults(job):
     try:
