@@ -3,8 +3,8 @@ from distutils.core import setup
 import os
 import sys
 from warnings import warn
-netcdf_pkgs = [('pynetcdf', 'NetCDFFile'), ('netCDF3', 'Dataset'), \
-               ('netCDF4', 'Dataset'), ('Scientific.IO.NetCDF', 'NetCDFFile'), \
+netcdf_pkgs = [('netCDF4', 'Dataset'), \
+               ('netCDF3', 'Dataset'), \
                ('pupynere', 'NetCDFFile')]
 for pkg, reader in netcdf_pkgs:
     try:
