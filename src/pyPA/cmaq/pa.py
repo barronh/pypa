@@ -4,6 +4,13 @@ from PseudoNetCDF.MetaNetCDF import file_master
 from warnings import warn
 
 def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
+    """
+    ipr_paths - list of strings or a string for IPR (aka PA) paths
+    irr_paths - list of strings or a string for IRR paths
+    conc_paths - list of strings or a string for CONC paths
+    idx - 4-D index usually a time slice with a 3-D location 
+          (e.g. [slice(None), 3, 4, 5])
+    """
     if isinstance(irr_paths,str):
         irrf = NetCDFFile(irr_paths)
     else:
@@ -16,10 +23,23 @@ def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
         
     if conc_paths is None:
         concf = None
-    elif isinstance(conc_paths,str):
-        concf = NetCDFFile(conc_paths)
+        concidx = None
     else:
-        concsf = file_master([NetCDFFile(conc_path) for conc_path in conc_paths])
+        if isinstance(conc_paths,str):
+            concf = NetCDFFile(conc_paths)
+        else:
+            concf = file_master([NetCDFFile(conc_path) for conc_path in conc_paths])
+        xoffset = (concf.XORIG -  iprf.XORIG) / iprf.XCELL
+        assert(float(xoffset) == float(int(xoffset)))
+        xoffset = int(xoffset)
+
+        yoffset = (concf.YORIG -  iprf.YORIG) / iprf.YCELL
+        assert(float(yoffset) == float(int(yoffset)))
+        yoffset = int(yoffset)
+        concidx = [i for i in idx]
+        concidx[2] += yoffset
+        concidx[3] += xoffset
+    
         
     
     # Process and Reaction keys should exclude TFLAG
@@ -40,9 +60,9 @@ def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
         warn("Cannot sort reaction keys")
     
     # Processes are predicated by a delimiter
-    prcs = ['INIT']+list(set(['_'.join(pr.split('_')[:-1]) for pr in pr_keys]))+['FCONC']
+    prcs = ['INIT']+list(set([pr.split('_')[0] for pr in pr_keys]))+['FCONC']
     # Species are preceded by a delimiter
-    spcs = list(set(['_'.join(pr.split('_')[-1:]) for pr in pr_keys]))
+    spcs = list(set(['_'.join(pr.split('_')[1:]).replace(' ', '_') for pr in pr_keys]))
     
     # Select a dummy variable for extracting properties
     pr_tmp = iprf.variables[pr_keys[0]]
@@ -72,22 +92,24 @@ def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
     irr = outf.createVariable("IRR", "f", ("TSTEP", "RXN"))
     irr.__dict__.update(dict(units = pr_tmp.units, var_desc = "IRR".ljust(16), long_name = "IRR".ljust(16)))
     ipr = outf.createVariable("IPR", "f", ("TSTEP", "SPECIES", "PROCESS"))
-    irr.__dict__.update(dict(units = pr_tmp.units, var_desc = "IPR".ljust(16), long_name = "IPR".ljust(16)))
+    ipr.__dict__.update(dict(units = pr_tmp.units, var_desc = "IPR".ljust(16), long_name = "IPR".ljust(16)))
 
     for rr, var in zip(rr_keys,irr.swapaxes(0,1)):
         var[:] = irrf.variables[rr][:][idx]
         
     for prc, prcvar in zip(prcs,ipr.swapaxes(0,2)[1:-1]):
-        for spc, spcvar in zip(spcs,prcvar):
-            try:
-                spcvar[:] = iprf.variables['_'.join([prc,spc])][:][idx]
-            except KeyError, es:
-                warn(str(es))
+        if not prc in ('INIT', 'FCONC'):
+            for spc, spcvar in zip(spcs,prcvar):
+                try:
+                    spcvar[:] = iprf.variables['_'.join([prc,spc])][:][idx]
+                except KeyError, es:
+                    warn(str(es))
+
     if concf is not None:
         for prc_slice, prcvar in zip([slice(0,-1), slice(1,None)], ipr.swapaxes(0,2)[[1,-1]]):
             for spc, spcvar in zip(spcs,prcvar):
-                if concf.variables.kas_key():
-                    spcvar[:] = concf.variables[spc][prc_slice]
+                if concf.variables.has_key(spc):
+                    spcvar[:] = concf.variables[spc][concidx][prc_slice]
                 else:
                     warn("No concentration given for %s" % spc)
             
