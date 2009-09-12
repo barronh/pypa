@@ -70,9 +70,12 @@ def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
     # Create an empty file and decorate
     # it as necessary
     outf = PseudoNetCDFFile()
-    outf.Species = "".join([spc.ljust(16) for spc in spcs])
-    outf.Process = "".join([prc.ljust(16) for prc in prcs])
-    outf.Reactions = "".join([rr_key.ljust(16) for rr_key in rr_keys])
+    max_spc = max(max([len(spc) for spc in spcs])+1, 16)
+    max_prc = max(max([len(prc) for prc in prcs])+1, 16)
+    max_rxn = max(max([len(rr_key) for rr_key in rr_keys])+1, 16)
+    outf.Species = "".join([spc.ljust(max_spc) for spc in spcs])
+    outf.Process = "".join([prc.ljust(max_prc) for prc in prcs])
+    outf.Reactions = "".join([rr_key.ljust(max_rxn) for rr_key in rr_keys])
     outf.createDimension("PROCESS", len(prcs))
     outf.createDimension("SPECIES", len(spcs))
     outf.createDimension("RXN", len(rr_keys))
