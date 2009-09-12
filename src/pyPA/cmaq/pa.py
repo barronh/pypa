@@ -109,7 +109,7 @@ def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
         for prc_slice, prcvar in zip([slice(0,-1), slice(1,None)], ipr.swapaxes(0,2)[[1,-1]]):
             for spc, spcvar in zip(spcs,prcvar):
                 if concf.variables.has_key(spc):
-                    spcvar[:] = concf.variables[spc][concidx][prc_slice]
+                    spcvar[:] = concf.variables[spc][:][concidx][prc_slice]
                 else:
                     warn("No concentration given for %s" % spc)
             
