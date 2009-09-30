@@ -100,7 +100,7 @@ def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
     for rr, var in zip(rr_keys,irr.swapaxes(0,1)):
         var[:] = irrf.variables[rr][:][idx]
         
-    for prc, prcvar in zip(prcs,ipr.swapaxes(0,2)[1:-1]):
+    for prc, prcvar in zip(prcs,ipr.swapaxes(0,2)):
         if not prc in ('INIT', 'FCONC'):
             for spc, spcvar in zip(spcs,prcvar):
                 try:
@@ -109,10 +109,10 @@ def mrgidx(ipr_paths, irr_paths, idx, conc_paths = None):
                     warn(str(es))
 
     if concf is not None:
-        for prc_slice, prcvar in zip([slice(0,-1), slice(1,None)], ipr.swapaxes(0,2)[[1,-1]]):
-            for spc, spcvar in zip(spcs,prcvar):
+        for prci, prc_slice in zip([0, -1], [slice(0,-1), slice(1,None)]):
+            for spci, spc in enumerate(spcs):
                 if concf.variables.has_key(spc):
-                    spcvar[:] = concf.variables[spc][:][concidx][prc_slice]
+                    ipr[:, spci, prci] = concf.variables[spc][:][concidx][prc_slice]
                 else:
                     warn("No concentration given for %s" % spc)
             
