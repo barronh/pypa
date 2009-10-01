@@ -114,7 +114,7 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
     # for each time.
     for ri,rxn_name in enumerate(rxn_iter):
         print >>sys.stderr, rxn_name
-        rxn=array(pa_file.variables[rxn_name])[envelope]*irr_contribution*irr_unitconversion
+        rxn=pa_file.variables[rxn_name][:][envelope]*irr_contribution*irr_unitconversion
         agg.aggregate_reaction(ri,rxn)
         
     # Each species/process combination will be cut into appropriate 
@@ -133,7 +133,7 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
                 print >>sys.stderr, "File does not contain %s it is assumed 0" % var_name
             else:    
                 # get the variable value
-                spc_prc=array(pa_file.variables[var_name])[envelope]*ipr_contribution*ipr_unitconversion
+                spc_prc=pa_file.variables[var_name][:][envelope]*ipr_contribution*ipr_unitconversion
 
                 # add it to the "stack"
                 agg.aggregate_process(si,pi,spc_prc)
@@ -169,7 +169,7 @@ class extracted(object):
         self.rxn=list(rxn)
         boxes=[(v,k) for k,v in box_id.iteritems()]; boxes.sort()
         boxes.pop(0)
-        self.pseudo_proc=array(boxes)[:,1].tolist()
+        self.pseudo_proc=boxes[:,1].tolist()
         self.pseudo_proc.append('EDHDIL')
         self.pseudo_proc.append('EDVDIL')
         self.pseudo_proc.append('TEMPADJ')

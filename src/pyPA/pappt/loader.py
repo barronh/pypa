@@ -104,7 +104,7 @@ def LoadPyPAFromYAML(yamlfile):
     except:
         rxn_iter = [key for key in pr_rr.variables.keys() if key[:4] in ['RXN_','IRR_']]
 
-    shape=array(pr_rr.variables[job.shape])
+    shape=pr_rr.variables[job.shape][:]
 
     # May be scalar
     if type(job.irr_unitconversion)==str:
