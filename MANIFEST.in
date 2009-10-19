@@ -1,1 +1,2 @@
+recursive-include src *.yaml *.py
 global-include *.yaml
