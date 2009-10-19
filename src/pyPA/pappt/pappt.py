@@ -169,7 +169,7 @@ class extracted(object):
         self.rxn=list(rxn)
         boxes=[(v,k) for k,v in box_id.iteritems()]; boxes.sort()
         boxes.pop(0)
-        self.pseudo_proc=boxes[:,1].tolist()
+        self.pseudo_proc=array(boxes)[:,1].tolist()
         self.pseudo_proc.append('EDHDIL')
         self.pseudo_proc.append('EDVDIL')
         self.pseudo_proc.append('TEMPADJ')
