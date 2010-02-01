@@ -24,9 +24,8 @@ kaxis: 1
 ###############################################
 #### PA will extract all values it needs from a meta 
 #### object (metawrapper) that can reference all necessary
-#### files.  Each file provided should also include a reader
-#### function (e.g. ipr, irr, ncf, (lambda x: ncf(x,'r+')), 
-#### but will default to ncf
+#### files.  Each file provided must also include a reader
+#### function (e.g. ipr, irr, NetCDFFile, (lambda x: NetCDFFile(x,'r+'))
 metawrapper: camx_pa_master|cmaq_pa_master|wrfchem_pa_master|file_master
 files: 
   - [<path to irrfile>, <reader>]

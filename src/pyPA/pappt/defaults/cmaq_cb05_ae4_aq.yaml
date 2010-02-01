@@ -1,1 +1,65 @@
-x: 1
+###### PA INPUT
+#### Process Analysis uses model generated Integrated Process and Reaction 
+#### Rates (IPR/IRR) to create a conceputually well mixed volume that can
+#### be analyzed to conceptually represent physical and chemical evolution.
+####
+#### There are 5 sections.  Commented options are optional.
+
+###############################################
+###### OUTPUT PATH                       ######
+###############################################
+#### outfile is the path for results
+outfile: cmaq.mrg.nc
+
+###############################################
+###### MODEL/MECHANISM IDENTIFICATION    ######
+###############################################
+#### models supported are cmaq, camx, wrfchem
+#### mechanisms supported cbivmech3
+model: cmaq
+mechanism: cb05_ae4_aq
+kaxis: 1
+###############################################
+###### INPUT FILES AND READERS           ######
+###############################################
+#### PA will extract all values it needs from a meta 
+#### object (metawrapper) that can reference all necessary
+#### files.  Each file provided must also include a reader
+#### function (e.g. ipr, irr, NetCDFFile, (lambda x: NetCDFFile(x,'r+'))
+metawrapper: cmaq_pa_master
+files: 
+  - [../data/cctm/CCTM_e3aPA_1.e3a, NetCDFFile]
+  - [../data/cctm/CCTM_e3aPA_2.e3a, NetCDFFile]
+  - [../data/cctm/CCTM_e3aIRR_1.e3a, NetCDFFile]
+  - [../data/cctm/CCTM_e3aIRR_2.e3a, NetCDFFile]
+  - [../data/cctm/CCTM_e3aCONC.e3a, NetCDFFile]
+  - [../derived/mcip3/METCRO3D_010722, NetCDFFile]
+  - [../derived/mcip3/METCRO2D_010722, NetCDFFile]
+
+###############################################
+###### PA META VARIABLES                 ######
+###############################################
+#### PA needs the name of variables to be used for the
+#### following purposes:
+####  - PA volume shape.  4-D array of booleans that include
+####    or exclude cells in IRR/IPR
+####  - Individual cell contribution to overall IRR/IPR weighted 
+####    averages (irr_contribution and ipr_contribution [defaults to 1])
+####  - Cell values to sum for normalization of IRR/IPR weighted
+####    averages (irr_normalizer and ipr_normalizer [defaults to irr/ipr_contribution])
+####  - Conversion of units (irr_unitconversion and ipr_unitconversion [defaults to 1])
+shape: DEFAULT_SHAPE
+init_conc: INIT
+final_conc: FCONC
+irr_contribution: AIRMOLS
+ipr_contribution: AIRMOLS
+normalizer: AIRMOLS
+irr_unitconversion: 1
+ipr_unitconversion: 1
+
+###############################################
+###### PA IRR/IPR VARIABES               ######
+###############################################
+reactions: ['IRR_1', 'IRR_2', 'IRR_3', 'IRR_4', 'IRR_5', 'IRR_6', 'IRR_7', 'IRR_8', 'IRR_9', 'IRR_10', 'IRR_11', 'IRR_12', 'IRR_13', 'IRR_14', 'IRR_15', 'IRR_16', 'IRR_17', 'IRR_18', 'IRR_19', 'IRR_20', 'IRR_21', 'IRR_22', 'IRR_23', 'IRR_24', 'IRR_25', 'IRR_26', 'IRR_27', 'IRR_28', 'IRR_29', 'IRR_30', 'IRR_31', 'IRR_32', 'IRR_33', 'IRR_34', 'IRR_35', 'IRR_36', 'IRR_37', 'IRR_38', 'IRR_39', 'IRR_40', 'IRR_41', 'IRR_42', 'IRR_43', 'IRR_44', 'IRR_45', 'IRR_46', 'IRR_47', 'IRR_48', 'IRR_49', 'IRR_50', 'IRR_51', 'IRR_52', 'IRR_53', 'IRR_54', 'IRR_55', 'IRR_56', 'IRR_57', 'IRR_58', 'IRR_59', 'IRR_60', 'IRR_61', 'IRR_62', 'IRR_63', 'IRR_64', 'IRR_65', 'IRR_66', 'IRR_67', 'IRR_68', 'IRR_69', 'IRR_70', 'IRR_71', 'IRR_72', 'IRR_73', 'IRR_74', 'IRR_75', 'IRR_76', 'IRR_77', 'IRR_78', 'IRR_79', 'IRR_80', 'IRR_81', 'IRR_82', 'IRR_83', 'IRR_84', 'IRR_85', 'IRR_86', 'IRR_87', 'IRR_88', 'IRR_89', 'IRR_90', 'IRR_91', 'IRR_92', 'IRR_93', 'IRR_94', 'IRR_95', 'IRR_96', 'IRR_97', 'IRR_98', 'IRR_99', 'IRR_100', 'IRR_101', 'IRR_102', 'IRR_103', 'IRR_104', 'IRR_105', 'IRR_106', 'IRR_107', 'IRR_108', 'IRR_109', 'IRR_110', 'IRR_111', 'IRR_112', 'IRR_113', 'IRR_114', 'IRR_115', 'IRR_116', 'IRR_117', 'IRR_118', 'IRR_119', 'IRR_120', 'IRR_121', 'IRR_122', 'IRR_123', 'IRR_124', 'IRR_125', 'IRR_126', 'IRR_127', 'IRR_128', 'IRR_129', 'IRR_130', 'IRR_131', 'IRR_132', 'IRR_133', 'IRR_134', 'IRR_135', 'IRR_136', 'IRR_137', 'IRR_138', 'IRR_139', 'IRR_140', 'IRR_141', 'IRR_142', 'IRR_143', 'IRR_144', 'IRR_145', 'IRR_146', 'IRR_147', 'IRR_148', 'IRR_149', 'IRR_150', 'IRR_151', 'IRR_152', 'IRR_153', 'IRR_154', 'IRR_155', 'IRR_156', 'IRR_157', 'IRR_158', 'IRR_159', 'IRR_160', 'IRR_161', 'IRR_162', 'IRR_163', 'IRR_164', 'IRR_165', 'IRR_166', 'IRR_167', 'IRR_168', 'IRR_169', 'IRR_170', 'IRR_171', 'IRR_172', 'IRR_173', 'IRR_174', 'IRR_175', 'IRR_176', 'IRR_177', 'IRR_178', 'IRR_179', 'IRR_180', 'IRR_181', 'IRR_182', 'IRR_183', 'IRR_184', 'IRR_185', 'IRR_186', 'IRR_187']
+species: ['PAR', 'C2O3', 'O3', 'O2', 'PAN', 'ALDX', 'TOLRO2', 'HCO3', 'CH4', 'TOLHRXN', 'CXO3', 'ALD2', 'HNO3', 'TOLNRXN', 'BNZHRXN', 'OH', 'HONO', 'PACD', 'XYL', 'ETOH', 'HOCL', 'CRO', 'NO2', 'NO3', 'ROOH', 'N2O5', 'H2O2', 'XYLRO2', 'ROR', 'O', 'IOLE', 'HCL', 'BENZENE', 'H2', 'TOLAER', 'CRES', 'XO2N', 'O1D', 'ETH', 'OPEN', 'OLE', 'NO', 'SESQRXN', 'CL2', 'CLO', 'CO', 'CL', 'ISOP', 'ISPD', 'SULF', 'SESQ', 'XYLNRXN', 'CSLAER', 'TERPAER', 'NTR', 'H2O', 'XYLAER', 'AACD', 'TOL', 'MGLY', 'BENZRO2', 'XO2', 'HO2', 'XYLHRXN', 'MEPX', 'TERP', 'PANX', 'M', 'ETHA', 'MEO2', 'FMCL', 'SO2', 'BNZNRXN', 'TO2', 'FACD', 'PNA', 'SULAER']
+processes: ['INIT', 'EMIS', 'HADV', 'ZADV', 'HDIF', 'VDIF', 'CLDS', 'DDEP', 'CHEM', 'FINAL']

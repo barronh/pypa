@@ -24,18 +24,17 @@ kaxis: 1
 ###############################################
 #### PA will extract all values it needs from a meta 
 #### object (metawrapper) that can reference all necessary
-#### files.  Each file provided should also include a reader
-#### function (e.g. ipr, irr, ncf, (lambda x: ncf(x,'r+')), 
-#### but will default to ncf
+#### files.  Each file provided must also include a reader
+#### function (e.g. ipr, irr, NetCDFFile, (lambda x: NetCDFFile(x,'r+'))
 metawrapper: cmaq_pa_master
 files: 
-  - [../data/cctm/CCTM_e3aPA_1.e3a, ncf]
-  - [../data/cctm/CCTM_e3aPA_2.e3a, ncf]
-  - [../data/cctm/CCTM_e3aIRR_1.e3a, ncf]
-  - [../data/cctm/CCTM_e3aIRR_2.e3a, ncf]
-  - [../data/cctm/CCTM_e3aCONC.e3a, ncf]
-  - [../derived/mcip3/METCRO3D_010722, ncf]
-  - [../derived/mcip3/METCRO2D_010722, ncf]
+  - [../data/cctm/CCTM_e3aPA_1.e3a, NetCDFFile]
+  - [../data/cctm/CCTM_e3aPA_2.e3a, NetCDFFile]
+  - [../data/cctm/CCTM_e3aIRR_1.e3a, NetCDFFile]
+  - [../data/cctm/CCTM_e3aIRR_2.e3a, NetCDFFile]
+  - [../data/cctm/CCTM_e3aCONC.e3a, NetCDFFile]
+  - [../derived/mcip3/METCRO3D_010722, NetCDFFile]
+  - [../derived/mcip3/METCRO2D_010722, NetCDFFile]
 
 ###############################################
 ###### PA META VARIABLES                 ######

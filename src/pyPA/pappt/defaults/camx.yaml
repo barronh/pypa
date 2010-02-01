@@ -14,11 +14,10 @@ kaxis: 1
 ###############################################
 #### PA will extract all values it needs from a meta 
 #### object (metawrapper) that can reference all necessary
-#### files.  Each file provided should also include a reader
-#### function (e.g. ipr, irr, ncf, (lambda x: ncf(x,'r+')), 
-#### but will default to ncf
+#### files.  Each file provided must also include a reader
+#### function (e.g. ipr, irr, NetCDFFile, (lambda x: NetCDFFile(x,'r+'))
 ####
-#### Required: IRR, IPR, SHAPE | ([FOOTPRINT] VERTICAL_DIFF)
+#### Required: IRR, IPR, [SHAPE | HEIGHT_PRESSURE VERTICAL_DIFF]
 metawrapper: camx_pa_master
 files: 
   - [ipr_file_path, ipr]

@@ -113,7 +113,7 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
     # Each reaction will be cut into appropriate boxes and summed to a single value
     # for each time.
     for ri,rxn_name in enumerate(rxn_iter):
-        print >>sys.stderr, rxn_name
+        print >>sys.stdout, rxn_name
         rxn=pa_file.variables[rxn_name][:][envelope]*irr_contribution*irr_unitconversion
         agg.aggregate_reaction(ri,rxn)
         
@@ -121,16 +121,13 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
     # boxes and summed to a single value for each time.
     for si,spc_name in enumerate(spc_iter):
         # echo to user
-        print >>sys.stderr, spc_name
+        print >>sys.stdout, spc_name
         for pi,prc_name in enumerate(prc_iter):
             # for each variable
             var_name='_'.join((prc_name,spc_name))
 
-            # echo to user
-            # print >>sys.stderr, var_name,(si,pi)
-
             if var_name not in pa_file.variables.keys():
-                print >>sys.stderr, "File does not contain %s it is assumed 0" % var_name
+                print >>sys.stdout, "File does not contain %s it is assumed 0" % var_name
             else:    
                 # get the variable value
                 spc_prc=pa_file.variables[var_name][:][envelope]*ipr_contribution*ipr_unitconversion
@@ -145,7 +142,6 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
                 except:
                     pass
 
-    # print 'Time (min): ', (time()-startt)/60
     return agg
 
 class extracted(object):
