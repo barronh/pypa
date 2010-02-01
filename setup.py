@@ -47,10 +47,10 @@ def find_data():
     import re
     data_pattern = re.compile(r'.*(.|_)(yaml|nc|net|irr|phy|ptb|sum|voc|txt|xls|graffle)$')
     data = []
-    prefix = os.path.join(os.path.curdir,'src', 'PseudoNetCDF')
+    prefix = os.path.join(os.path.curdir,'src', 'pyPA')
     walker = os.walk('src')
     for thisdir, itsdirs, itsfiles in walker:
-        if thisdir != os.path.join('src','PseudoNetCDF.egg-info'):
+        if thisdir != os.path.join('src','pyPA.egg-info'):
             data.extend([os.path.join(thisdir[len(prefix)-1:],f) for f in itsfiles if data_pattern.match(f) is not None])
     
     return data
