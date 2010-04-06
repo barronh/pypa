@@ -39,7 +39,7 @@ from lagrangian import box_id,boxes
 
 from ..netcdf import NetCDFFile as ncf
     
-def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,irr_unitconversion=1,ipr_contribution=1,irr_contribution=1,normalizer=1,kaxis=1):
+def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,irr_unitconversion=1,contribution=1,normalizer=1,kaxis=1):
     """
     ext_mrg is the drive horse and calls all the other functions and
     classes
@@ -84,21 +84,20 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
         slice(nanmin(idx[2]-1).astype('i'),nanmax(idx[2]).astype('i'))
         ]
     shape=shape[envelope]
-    try:
+    if isinstance(normalizer,(int,float)):
+        normalizer=shape[1:]*normalizer
+
+    for unit, unit_contribution in contribution.iteritems():
+        if type(unit_contribution) not in [float,int]:
+            contribution[unit]=unit_contribution[envelope]
+
+    if type(normalizer) not in [float,int]:
         normalizer=normalizer[envelope]
-    except TypeError:
-        if isinstance(normalizer,(int,float)):
-            normalizer=shape[1:]*normalizer
-        else:
-            raise
-        
-    if type(irr_contribution) not in [float,int]:
-        irr_contribution=irr_contribution[envelope]
+
+
     if type(irr_unitconversion) not in [float,int]:
         irr_unitconversion=irr_unitconversion[envelope]
 
-    if type(ipr_contribution) not in [float,int]:
-        ipr_contribution=ipr_contribution[envelope]
     if type(ipr_unitconversion) not in [float,int]:
         ipr_unitconversion=ipr_unitconversion[envelope]
     
@@ -114,7 +113,8 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
     # for each time.
     for ri,rxn_name in enumerate(rxn_iter):
         print >>sys.stdout, rxn_name
-        rxn=pa_file.variables[rxn_name][:][envelope]*irr_contribution*irr_unitconversion
+        unit = pa_file.variables[rxn_name].units.strip()
+        rxn=pa_file.variables[rxn_name][:][envelope]*contribution[unit]*irr_unitconversion
         agg.aggregate_reaction(ri,rxn)
         
     # Each species/process combination will be cut into appropriate 
@@ -130,7 +130,8 @@ def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,i
                 print >>sys.stdout, "File does not contain %s it is assumed 0" % var_name
             else:    
                 # get the variable value
-                spc_prc=pa_file.variables[var_name][:][envelope]*ipr_contribution*ipr_unitconversion
+                unit = pa_file.variables[var_name].units.strip()
+                spc_prc=pa_file.variables[var_name][:][envelope]*contribution[unit]*ipr_unitconversion
 
                 # add it to the "stack"
                 agg.aggregate_process(si,pi,spc_prc)
@@ -236,7 +237,7 @@ class extracted(object):
         #  4) (i_u+i_ve)/(a_u+a_ve)->(i_u+i_ve+i_he)/(a_u+a_ve+a_he)
         i=lambda box: where(isnan(self.process),0,self.process)[:,:,init_id,box]
         a=lambda box: where(isnan(self.normalizer),0,self.normalizer)[:,box,newaxis]
-
+        import pdb; pdb.set_trace()
         vdetrain=(
                     a(box_id.VDET)*(i(box_id.NOCHG)+i(box_id.HDET))-
                     i(box_id.VDET)*(a(box_id.NOCHG)+a(box_id.HDET))
@@ -321,18 +322,19 @@ class extracted(object):
         output=PseudoNetCDFFile()
         output.createDimension('TSTEP',ipr_output.shape[0])
         output.createDimension('SPECIES',ipr_output.shape[1])
-        output.createDimension('PROCESS',ipr_output.shape[2])
-        output.createDimension('RXN',irr_output.shape[1])
-        
-        v=output.createVariable('IPR','f',('TSTEP','SPECIES','PROCESS'))
-        v.units="ppmV/time"
-        v[:] = ipr_output
-        v=output.createVariable('IRR','f',('TSTEP','RXN'))
-        v.units="ppmV/time"
-        v[:]= irr_output
-        output.Process=''.join([i.ljust(16) for i in self.prc])
-        output.Species=''.join([i.ljust(16) for i in self.spc])
-        output.Reactions=''.join([i.ljust(16) for i in self.rxn])
+        if ipr_output.shape[2] > 0:
+            output.createDimension('PROCESS',ipr_output.shape[2])
+            v=output.createVariable('IPR','f',('TSTEP','SPECIES','PROCESS'))
+            v.units="ppmV/time"
+            v[:] = ipr_output
+            output.Process=''.join([i.ljust(16) for i in self.prc])
+            output.Species=''.join([i.ljust(16) for i in self.spc])
+        if irr_output.shape[1] > 0:
+            output.createDimension('RXN',irr_output.shape[1])
+            v=output.createVariable('IRR','f',('TSTEP','RXN'))
+            v.units="ppmV/time"
+            v[:]= irr_output
+            output.Reactions=''.join([i.ljust(16) for i in self.rxn])
         return output
 
     def boxagg(self,vals):
