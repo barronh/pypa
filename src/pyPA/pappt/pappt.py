@@ -1,490 +1,259 @@
-# !/usr/bin/env python -i
-__doc__="""
-PAPPT is the Process Analysis Post Processing Tools
-These tools are composed of a driving function ext_mrg and
-a helper class extracted.
+import sys
+from warnings import warn
+from os.path import exists
 
-ext_mrg fills an extracted object with rxn and process (for 
-specified reactions and species) information according to the
-shape, unit conversion, contribution, and normalizer variables 
-specified.  The extracted object contains extracted information
-that has been assigned to one of 5 boxes (NOCHG, VENT, VDET, 
-HENT, HDET).
+from yaml import load
 
-The extracted class provides an easy interface for categorizing
-spatial values into their contribution categories. (see boxes 
-above)  These categories can then be combined and normalized per
-user specified values to retrieve the contribution to each process
-"""
+from pyPA.utils.CMAQTransforms import cmaq_pa_master
+from pyPA.pappt.lagrangian import boxes, box_id
+from pyPA.pappt.pseudo_procs import simple_pseudo_procs
 
-__all__ = ['MergedWriter', 'box_id', 'boxes', 'ext_mrg', 'extracted']
+def ext_mrg(input):
+    from numpy import ndarray, newaxis, where, flipud, fromfile, zeros, ones
+    from numpy.ma import masked_where, masked_invalid
+    from PseudoNetCDF import PseudoNetCDFFile, PseudoNetCDFVariable
+    from PseudoNetCDF.pncgen import pncgen
 
-
-HeadURL="$HeadURL$"
-ChangeDate = "$LastChangedDate$"
-RevisionNum= "$LastChangedRevision$"
-ChangedBy  = "$LastChangedBy$"
-__version__ = RevisionNum
-
-import unittest
-import operator, sys
-from time import time
-
-from numpy import vstack, ones, where, zeros, \
-                  indices, squeeze, array, nansum, \
-                  nan,nanmin, nanmax,hstack,newaxis, \
-                  arange,dtype,isnan,ndarray
-from PseudoNetCDF.sci_var import PseudoNetCDFFile,Pseudo2NetCDF
-from lagrangian import box_id,boxes
-
-from ..netcdf import NetCDFFile as ncf
+    initial = input.get('initial', 'INIT')
+    final = input.get('final', 'FCONC')
     
-def ext_mrg(pa_file,spc_iter,prc_iter,rxn_iter,shape=None,ipr_unitconversion=1,irr_unitconversion=1,contribution=1,normalizer=1,kaxis=1):
-    """
-    ext_mrg is the drive horse and calls all the other functions and
-    classes
-
-    pa_file - must have dictionary property variables that returns
-                something that can be converted to an array with 
-                dimensions (time,layer,row,col)
-
-    spc_iter, prc_iter, and rxn_iter - should iterate keys for the variables
-                dictionary for species, processes, and reactions
-
-    shape - 4 dimensional array(time,layer,row,col) with 0 and 1 values where 1s 
-                define the shape of the analysis volume
-
-    unit_conversion - supplies a factor to change units.  The factor must be broadcastable 
-                to ipr and irr array dimensions
-
-    contribution - supplies a factor to be applied to the cell that represents
-                its contribution to the analysis volume
-
-    normalizer - supplies an array that can be summed to be a normalization
-                denominator
-
-    \sigma_{ijk}{val_{ijk}*contribution_{ijk}*ucnv_{ijk}} /
-    \sigma_{ijk}{normalization_{ijk}}
-    """
-    # timing the process for posterity
-    startt=time()
-
-    # If the shape is not defined, initialize it
-    if shape==None:
-        shape=ones(unit_conversion.shape,'f')
+    # Open a single PseudoNetCDF file that can access
+    # all variables necessary from input files
+    pa_master = eval(input.get('metawrapper', 'file_master'))(input['files'])
     
-    # Improve efficiency by using envelope
-    idx=indices(shape[0,:,:,:].shape).astype('f')+1
-    idx*=shape[newaxis].max(1)
-    idx[idx==0]=nan
-    envelope=[
-        slice(None),
-        slice(nanmin(idx[0]-1).astype('i'),nanmax(idx[0]).astype('i')),
-        slice(nanmin(idx[1]-1).astype('i'),nanmax(idx[1]).astype('i')),
-        slice(nanmin(idx[2]-1).astype('i'),nanmax(idx[2]).astype('i'))
-        ]
-    shape=shape[envelope]
-    if isinstance(normalizer,(int,float)):
-        normalizer=shape[1:]*normalizer
+    # Analysis volume shape variable name
+    shape_name = input.get('SHAPE', 'DEFAULT_SHAPE')
 
-    for unit, unit_contribution in contribution.iteritems():
-        if type(unit_contribution) not in [float,int]:
-            contribution[unit]=unit_contribution[envelope]
-
-    if type(normalizer) not in [float,int]:
-        normalizer=normalizer[envelope]
+    # Variable dimension order
+    #
+    # Provide the order of spatiotemporal dimensions for variables
+    # *assuming* consistent for all variables
+    #
+    # For convenience dimensions are also ordered for later use
+    dimensions = input.get('dimensions', dict(TSTEP=0, LAY = 1, ROW = 2, COL = 3))    
+    spatial_dimensions_ordinals = [v for k,v in dimensions.iteritems() if k != 'TSTEP']
+    spatial_dimensions_ordinals.sort(reverse = True)
+    dimensions_ordered = [(v, k) for k,v in dimensions.iteritems()]
+    dimensions_ordered.sort(reverse = False)
+    dimensions_ordered = [k for v,k in dimensions.iteritems()]
 
 
-    if type(irr_unitconversion) not in [float,int]:
-        irr_unitconversion=irr_unitconversion[envelope]
+    # Unit conversion dictionary
+    #
+    # each element of the dictionary has a key that represents the input unit
+    # and a dictionary value.  The dictionary value should have two keys: expression
+    # and new_unit.  expression is a textual expression to perform on the values which
+    # should be entered as <values>
+    #
+    # *Providing default conversion of umol/hr values to ppm for CAMx
+    # **<values> is replaced by var[:] which evaluates in the global environment
+    #   to the current values
+    unitconversions = {'umol/hr': dict(expression = "<values> / denominator['ppm']", new_unit = 'ppm')}
+    unitconversions.update(input.get('unitconversions', {}))
+    for unit, unit_dict in unitconversions.iteritems():
+        unitconversions[unit]['expression'] = unitconversions[unit]['expression'].replace('<value>', 'var[:]')
 
-    if type(ipr_unitconversion) not in [float,int]:
-        ipr_unitconversion=ipr_unitconversion[envelope]
+    # intrinsic to extrinsic conversion dictionary
+    #
+    # each element has a key for the input unit that it converts
+    # the value is the name of a variable that can be multiplied to
+    # an intrinic unit to obtain an extrinsic unit
+    contributions = {'ppmV': 'AIRMOLS', 'ppm': 'AIRMOLS', 'ppm/h': 'AIRMOLS', 'ppmV/h': 'AIRMOLS', "micrograms/m**3": 'VOL', "umol/hr": "even", "None": "even"}
+    contributions.update(input.get('contributions', {}))
     
-    # Use shapes to define regions associated with (v and h) entrain,
-    #  (v and h) detrain, initial, and hourly  data
-    bxs=boxes(shape,kaxis)
+    # extrinsic to intrinsic conversion dictionary
+    #
+    # each element has a key for the extrinsic unit that it converts
+    # the value is the name of a variable that can divide a extrinsic
+    # unit to return an intrinsic unit
+    # *by default all contribution variables are also normalizers
+    normalizers = contributions.copy()
+    normalizers.update(input.get('normalizers', {}))
 
-    # create an extracted object to aggregate
-    # moles
-    agg=extracted(spc_iter,prc_iter,rxn_iter,bxs,normalizer)
 
-    # Each reaction will be cut into appropriate boxes and summed to a single value
-    # for each time.
-    for ri,rxn_name in enumerate(rxn_iter):
-        print >>sys.stdout, rxn_name
-        unit = pa_file.variables[rxn_name].units.strip()
-        rxn=pa_file.variables[rxn_name][:][envelope]*contribution[unit]*irr_unitconversion
-        agg.aggregate_reaction(ri,rxn)
-        
-    # Each species/process combination will be cut into appropriate 
-    # boxes and summed to a single value for each time.
-    for si,spc_name in enumerate(spc_iter):
-        # echo to user
-        print >>sys.stdout, spc_name
-        for pi,prc_name in enumerate(prc_iter):
-            # for each variable
-            var_name='_'.join((prc_name,spc_name))
-
-            if var_name not in pa_file.variables.keys():
-                print >>sys.stdout, "File does not contain %s it is assumed 0" % var_name
-            else:    
-                # get the variable value
-                unit = pa_file.variables[var_name].units.strip()
-                spc_prc=pa_file.variables[var_name][:][envelope]*contribution[unit]*ipr_unitconversion
-
-                # add it to the "stack"
-                agg.aggregate_process(si,pi,spc_prc)
-
-                # not strickly necessary, but using lots of memory
-                try:
-                    del spc_prc
-                    del ipr.variables[var_name]
-                except:
-                    pass
-
-    return agg
-
-class extracted(object):
-    """
-    Extracted accumulates mol based process informaiton into 
-    the separate boxes (horiz. (vertical) en(de)train, dilution)
-    and has the functionality to convert the results to mrged
-    and convert to ppm/ppb
-    """
-  
-    def __init__(self,spc,prc,rxn,bxs,normalizer):
-        """
-        extracted takes dimensioning variables spc,prc,ntime
-        and box definitions  (bxs), the air species (mols) and the
-        keyword to id the initial process
-        """
-        # internalize boxes
-        self.bxs=bxs
-        self.spc=spc
-        self.prc=list(prc)
-        self.rxn=list(rxn)
-        boxes=[(v,k) for k,v in box_id.iteritems()]; boxes.sort()
-        boxes.pop(0)
-        self.pseudo_proc=array(boxes)[:,1].tolist()
-        self.pseudo_proc.append('EDHDIL')
-        self.pseudo_proc.append('EDVDIL')
-        self.pseudo_proc.append('TEMPADJ')
-        self.prc.extend(self.pseudo_proc)
-        ntime=bxs.shape[0]
-        nboxes=bxs.shape[-1]
-        # To ease computation, the normal shape of variables
-        # will be coerced to add a 1 axis corresponding to boxes
-        boxaxis=-1
-        self.__new_shape=list(bxs.shape)
-        self.__new_shape[boxaxis]=1
-
-        # make it harder to edit
-        self.__new_shape=tuple(self.__new_shape)
-
-        # The air species is special since it will be sumed
-        # separately.  The new shape will have single dimensioned
-        # axes corresponding to spc and prc
-        self.normalizer=normalizer.reshape(self.__new_shape)
-        norm_shape=(ntime,nboxes)
-        # norm_shape=list(bxs.shape)
-
-        # The air species is summed within its boxes to give total box moles
-        self.normalizer=nansum(nansum(nansum(self.normalizer*self.bxs,axis=-2),axis=-2),axis=-2).reshape(norm_shape)
-
-        # Initialize data storage array
-        self.process=zeros((ntime,len(spc),len(self.prc),nboxes),'f')
-        self.reaction=zeros((ntime,len(rxn),nboxes),'f')
-    
-    def merge(self,prc={'INIT':[box_id.NOCHG,box_id.VDET,box_id.HDET]},convert=True,init_prc='INIT',final_prc='FCONC',exclude=['TEMPADJ','AVOL','UCNV']):
-        """
-        Prc is a dictionary of processes that maps to a list of 
-        boxes to include in the merge process for that proc.  For
-        processes not in that dictionary, entrained and unchanged
-        will be used
-        """
-
-        # Default box set
-        def_boxes=[box_id.NOCHG,box_id.VENT,box_id.HENT]
-
-        # Dimension and create an output array
-        ipr_output=zeros(self.process.shape[:-1],self.process.dtype)
-        irr_output=zeros(self.reaction.shape[:-1],self.reaction.dtype)
-        
-        # For each process use the default box set if one is not
-        # provided
-        for pname in [p for p in self.prc if p not in self.pseudo_proc]:
-            # get ordinal corresponding to dimension
-            p=self.prc.index(pname)
-
-            # get boxes to sum across
-            boxes=prc.get(pname,def_boxes)
+    # analysis volume shape
+    #
+    # shape has ones (on) and zeros (off) to indicate
+    # which cells in the process analysis volume will
+    # used in the analysis
+    #
+    # if an ascii mask is provided, it further restricts
+    # the cells used following the same on/off convection
+    # the ascii mask is an ascii map of the domain cells
+    # delimmited by spaces.
+    shape = eval(shape_name, locals(), pa_master.variables)
+    if input.has_key('ascii_mask'):
+        ascii_mask = input['ascii_mask']
+        if exists(ascii_mask):
+            cols = len(file(ascii_mask, 'r').readline().split(" "))
+            rows = len([l for l in file(ascii_mask, 'r').readlines() if l != '\n'])
             
-            # set values
-            ipr_output[:,:,p]=nansum(self.process[:,:,p,boxes],axis=-1)/nansum(self.normalizer[:,boxes],axis=-1)[:,newaxis]
-        
-        # For pseudo-processes en(de)trainment, dilution and tempadj, over-write values
-        # with delta in edtrain variable (INIT)
-        init_id=self.prc.index(init_prc)
-        
-        #  Assumed order
-        #  Pseudo Process: (1) V Detrain (2) V Entrain and Dilution (3) H Detrain (4) H Entrain and Dilution
-        # 
-        #  Equation subscripts u: nochg; vd: vertical detrainment; ve: vertical entrain and dilution; hd: horizontal detrainment; he: horizontal entrain and dilution
-        #  1) (i_u+i_hd+i_vd)/(a_u+a_hd+a_vd)->(i_u+i_hd)/(a_u+a_hd)
-        #  2) (i_u+i_hd)/(a_u+a_hd)->(i_u+i_hd+i_ve)/(a_u+a_hd+a_ve)
-        #  3) (i_u+i_hd+i_ve)/(a_u+a_hd+a_ve)->(i_u+i_ve)/(a_u+a_ve)
-        #  4) (i_u+i_ve)/(a_u+a_ve)->(i_u+i_ve+i_he)/(a_u+a_ve+a_he)
-        i=lambda box: where(isnan(self.process),0,self.process)[:,:,init_id,box]
-        a=lambda box: where(isnan(self.normalizer),0,self.normalizer)[:,box,newaxis]
-        import pdb; pdb.set_trace()
-        vdetrain=(
-                    a(box_id.VDET)*(i(box_id.NOCHG)+i(box_id.HDET))-
-                    i(box_id.VDET)*(a(box_id.NOCHG)+a(box_id.HDET))
-                )/(
-                    (a(box_id.NOCHG)+a(box_id.HDET))*(a(box_id.NOCHG)+a(box_id.HDET)+a(box_id.VDET))
-                )
-
-        ventrain=(
-                    i(box_id.VENT)
-                )/(
-                    a(box_id.NOCHG)+a(box_id.HDET)+a(box_id.VENT)
-                )
-        
-        vdilution=-(
-                    (i(box_id.NOCHG)+i(box_id.HDET))*a(box_id.VENT)
-                )/(
-                    (a(box_id.NOCHG)+a(box_id.HDET))*(a(box_id.NOCHG)+a(box_id.HDET)+a(box_id.VENT))
-                )
-
-        hdetrain=(
-                    a(box_id.HDET)*(i(box_id.NOCHG)+i(box_id.VENT))-
-                    i(box_id.HDET)*(a(box_id.NOCHG)+a(box_id.VENT))
-                )/(
-                    (a(box_id.NOCHG)+a(box_id.VENT))*(a(box_id.NOCHG)+a(box_id.VENT)+a(box_id.HDET))
-                )
-
-
-        hentrain=(
-                    i(box_id.HENT)
-                )/(
-                    a(box_id.NOCHG)+a(box_id.HENT)+a(box_id.VENT)
-                )
-
-        hdilution=-(
-                    a(box_id.HENT)*(i(box_id.NOCHG)+i(box_id.VENT))
-                )/(
-                    (a(box_id.NOCHG)+a(box_id.VENT))*(a(box_id.NOCHG)+a(box_id.HENT)+a(box_id.VENT))
-                )
-
-        # Remove NANs for simplicity
-        hdetrain=where(isnan(hdetrain),0,hdetrain)
-        vdetrain=where(isnan(vdetrain),0,vdetrain)
-        ventrain=where(isnan(ventrain),0,ventrain)
-        hentrain=where(isnan(hentrain),0,hentrain)
-
-        del i,a
-        
-        dilution=vdilution+hdilution
-        
-        # Assign values
-        for pname,pid in [(k,v) for k,v in box_id.iteritems() if v!=0]:
-            # get ordinal corresponding to dimension
-            p=self.prc.index(pname)
+            ascii_mask = flipud(fromfile(ascii_mask, sep = " ", dtype = 'bool').reshape(1, 1, rows, cols))
+            shape = shape * ascii_mask
             
-            # get boxes to sum across
-            boxes=prc.get(pname,def_boxes)
+        else:
+            print >> file(ascii_mask, 'w'), '\n'.join([' '.join(['1']*shape.shape[3])]*shape.shape[2])
+            raise ValueError, """File %s was not found; instead, a template was created.
+    Edit the template to include only those cells of interest"""
 
-            # set values
-            ipr_output[:,:,p]={'HENT':hentrain,'HDET':hdetrain, 'VDET': vdetrain,'VENT':ventrain}[pname]
+
+    def reduce_space(var):
+        """
+        Convenience function that removes the spatial dimensions
+        by summing across them.  This should be used for extrinsic
+        variables to get the total volume value.  Dimension order is
+        taken from global environment
         
-        # Add dilution process
-        p=self.prc.index('EDHDIL')
-        ipr_output[:,:,p]=hdilution
-        p=self.prc.index('EDVDIL')
-        ipr_output[:,:,p]=vdilution
+        example: mass_o3 might have 4 dimensions (TIME, LAYERS, ROWS, COLS)
+                 reduce(mass_o3) returns total mass_o3 with only a time dimension
+        """
+        out = var.copy()
+        for d in spatial_dimensions_ordinals:
+            out = out.sum(d)
+        return out
+                
+    mask = shape.astype('bool') == False
+    even = ones(mask.shape, 'f')[1:]
+    
+    species = input.get('species', None)
+    species = species or [key[len(initial) + 1:] for key in pa_master.variables.keys() if key[:len(initial) + 1] == initial + '_']
+
+    temp_spc = species[0]
+    processes = input.get('processes', None)
+    processes = processes or [key[:-len(temp_spc)-1] for key in pa_master.variables.keys() if '_' + temp_spc == key[-len(temp_spc)-1:]]
+
+    reactions = input.get('reactions', None)
+    reactions = reactions or [key for key in pa_master.variables.keys() if 'IRR_' in key]
+    
+    agg_keys = [(shape_name, 's')]
+    agg_keys.extend([(k, 'a') for k in list(set([v for k, v in contributions.iteritems() if v not in ('even',)]+[v for k, v in normalizers.iteritems() if v not in ('even',)]))])
+    agg_keys.extend([(rxn, 'r') for rxn in reactions])
+    
+    for spc in species:
+        for prc in processes:
+            ptype = {initial: 'i', final: 'f'}.get(prc, 'p')
+            agg_keys.append(('_'.join([prc, spc]), ptype))
+            
+    for k, v in contributions.iteritems():
+        unit_contribution = eval(v, locals(), pa_master.variables)
+        if isinstance(unit_contribution, ndarray):
+            unit_contribution = unit_contribution[:]
+            
+        contributions[k] = unit_contribution
+    
+    bxs=boxes(shape,kaxis = dimensions['LAY'])
+    norm_bxs = {}
+    for unit, v in normalizers.iteritems():
+        unit_normalizer = eval(v, locals(), pa_master.variables)
+        if isinstance(unit_normalizer, ndarray):
+            unit_contribution = unit_normalizer[:]
+            norm_bxs[unit] = reduce_space(bxs * unit_normalizer[..., newaxis])
+        else:
+            norm_bxs[unit] = reduce_space(bxs * unit_normalizer)
+            
+        normalizers[unit] = unit_contribution
+    
+    denominators = {}
+    init_denominators = {}
+    for k, v in normalizers.iteritems():
+        denominators[k] = reduce_space(masked_where(mask[1:], v))
+        init_denominators[k] = reduce_space(masked_where(mask[:-1], v))
         
-        #  Temperature adjustment accounts for difference between the final and sum of initial and process concentration
-        #  TempAdj=Final-Init-dC
-        procs=[self.prc.index(i) for i in self.prc if i not in [final_prc]+exclude]
+    outputfile = PseudoNetCDFFile()
+    try:
+        outputfile.createDimension('TSTEP', len(pa_master.dimensions['TSTEP']))
+        outputfile.createDimension('TSTEP_STAG', len(outputfile.dimensions['TSTEP'])+1)
+    except:
+        outputfile.createDimension('TSTEP', pa_master.dimensions['TSTEP'])
+        outputfile.createDimension('TSTEP_STAG', outputfile.dimensions['TSTEP']+1)
+        
+    outputfile.createDimension('LAY', mask.shape[dimensions['LAY']])
+    outputfile.createDimension('ROW', mask.shape[dimensions['ROW']])
+    outputfile.createDimension('COL', mask.shape[dimensions['COL']])
+    outputfile.createDimension('VAR', len(agg_keys)+1)
+    outputfile.createDimension('DATE-TIME', 2)
+    
+    var = pa_master.variables['TFLAG']
+    outputfile.variables['TFLAG'] = PseudoNetCDFVariable(outputfile, 'TFLAG', 'i', ('TSTEP', 'VAR', 'DATE-TIME'), units = var.units, long_name = var.long_name, var_desc = var.var_desc, values = var[:][:, [0], :].repeat(len(agg_keys)+1, 1))
+    
+    for key, ktype in agg_keys:
+        print >> sys.stderr, key, 'start'
+        dimensions = ('TSTEP',)
         try:
-            final_id=self.prc.index(final_prc)
-            tempadj=ipr_output[:-1,:,final_id]-ipr_output[1:,:,init_id]
-        except:
-            tempadj=zeros(ipr_output.shape[:2],'f')[1:]
+            var = pa_master.variables[key]
+        except KeyError, (e):
+            if ktype == 'p':
+                warn("No %s process variable" % key)
+                var = PseudoNetCDFVariable(pa_master, 'temp', 'f', dimensions_ordered, units = 'None', long_name = key, var_desc = "Dummy values (0) for %s" % key, values = zeros(mask.shape, 'f')[1:])
+            else:
+                raise KeyError, "No %s variable" % key
 
-        # Add temperature adjustment process
-        p=self.prc.index('TEMPADJ')
-        ipr_output[1:,:,p]=tempadj
-
-        irr_output[:,:]=nansum(self.reaction[:,:,def_boxes],-1)/nansum(self.normalizer[:,def_boxes],axis=-1)[:,newaxis]
+        unit = var.units.strip()
+        if unit not in contributions and ktype not in ('a', 's'):
+            warn("Ignoring %s; cannot process unit (%s)" % (key, unit))
+            warn("To add processing for a unit, update the contributions and/or normalizations dictionary with appropriate variable")
+            continue
+        mask_slice = slice(1, None)
         
-        output=PseudoNetCDFFile()
-        output.createDimension('TSTEP',ipr_output.shape[0])
-        output.createDimension('SPECIES',ipr_output.shape[1])
-        if ipr_output.shape[2] > 0:
-            output.createDimension('PROCESS',ipr_output.shape[2])
-            v=output.createVariable('IPR','f',('TSTEP','SPECIES','PROCESS'))
-            v.units="ppmV/time"
-            v[:] = ipr_output
-            output.Process=''.join([i.ljust(16) for i in self.prc])
-            output.Species=''.join([i.ljust(16) for i in self.spc])
-        if irr_output.shape[1] > 0:
-            output.createDimension('RXN',irr_output.shape[1])
-            v=output.createVariable('IRR','f',('TSTEP','RXN'))
-            v.units="ppmV/time"
-            v[:]= irr_output
-            output.Reactions=''.join([i.ljust(16) for i in self.rxn])
-        return output
-
-    def boxagg(self,vals):
-        cut=(array(vals).reshape(self.__new_shape)*self.bxs)
-        return nansum(nansum(nansum(cut,axis=-2),axis=-2),axis=-2)
+        if ktype in ('a',):
+            numerator = reduce_space(masked_where(mask[mask_slice], var[:]))
+            denominator = 1
+        elif ktype in ('s',):
+            numerator = shape
+            dimensions = ('TSTEP_STAG', 'LAY', 'ROW', 'COL')
+            denominator = 1
+        else:
+            if ktype in ('i',):
+                mask_slice = slice(0, -1)
+                denominator = init_denominators[unit]
+            else:
+                denominator = denominators[unit]
+            numerator = reduce_space(masked_where(mask[mask_slice], var[:]*contributions[unit]))
+        
+        values = numerator / denominator
+        outputfile.variables[key] = PseudoNetCDFVariable(outputfile, key, 'f', dimensions, values = values, units = unit, long_name = var.long_name, var_desc = var.var_desc)
     
-    def aggregate_reaction(self,rxn,vals):
-        #  vals dim(time,layer,col,row)
-        #  bxs dim(time,layer,col,row,bxs)
-        self.reaction[:,rxn,:]=self.boxagg(vals)
-    
-    def aggregate_process(self,spc,prc,vals):
-        #  vals dim(time,layer,col,row)
-        #  bxs dim(time,layer,col,row,bxs)
-        self.process[:,spc,prc,:]=self.boxagg(vals)
-
-def MergedWriter(outpath,ipr_irr,shape,tflag):
-    """
-    Persists 3 arrays and meta data
-    irr - 2 dimensional array (TSTEP, Reaction)
-    ipr - 3 dimensional array (TSTEP, Species, Process)
-    shape - 4  dimensional array (TSTEP,LAY,ROW,COL)
-    TFLAG - 3 dimensional array (TSTEP,VAR,DATE-TIME)
-    """
-    ipr_irr.createDimension('VAR',3)
-    ipr_irr.createDimension('DATE-TIME',2)
-    shape_out=ipr_irr.createVariable('SHAPE','i',('TSTEP_STAG','LAY','ROW','COL'))
-    shape_out[...] = shape
-    shape_out.units='onoff'
-    shape_out.var_desc='SHAPE'.ljust(16)
-    shape_out.long_name='SHAPE'.ljust(16)
-    time=ipr_irr.createVariable('TFLAG','i',('TSTEP','VAR','DATE-TIME'))
-    time[:,:,:]=tflag[:,newaxis,:]
-    time.units='YYYYJJJ,HHDDMM'
-    time.var_desc='TFLAG'.ljust(16)
-    time.long_name='TFLAG'.ljust(16)
+    if reduce_space(bxs).sum(0)[[box_id.HENT, box_id.HDET, box_id.VENT, box_id.VDET]].astype('bool').any():
+        simple_pseudo_procs(pa_master = pa_master, outputfile = outputfile, spcs = species, initial = initial, bxs = bxs, norm_bxs = norm_bxs, contributions = contributions, reduce_space = reduce_space)
+        processes.extend("VDET VENT HDET HENT EDHDIL EDVDIL".split())
     
     
-    return Pseudo2NetCDF().convert(ipr_irr,outpath)
+    for name, var in outputfile.variables.iteritems():
+        in_unit = var.units.strip()
+        if in_unit in unitconversions:
+            var[:] = eval(unitconversions[in_unit]['expression'])
+            var.units = unitconversions[in_unit]['new_unit']
     
-class TestExtractor(unittest.TestCase):
-    def setUp(self):
-        spc=['NO','NO2','O3']
-        prc=['INIT','ADV','DIF','EMIS','CHEM','FCONC']
-        rxn=['IRR_1','IRR_2','IRR_3','IRR_4']
-        ntime=4
-        shape=zeros((5,3,4,5),'f')
-        shape[0,0,0,0]=1
-        shape[1,:2,0,0]=1
-        shape[2,:2,:2,0]=1
-        shape[3,:2,:2,:2]=1
-        shape[4,:2,:2,:2]=1
-        bxs=boxes(shape)
-        self.shape=shape
-        self.ext=extracted(spc,prc,rxn,bxs,ones(bxs.shape[:-1],'f'))
-        self.vals=arange(240,dtype='f').reshape(4,3,4,5)
-        self.ans=array([[0.,20.,0.,0.,0.],[140.,0.,0.,150.,0.],[530.,0.,0.,534.,0.],[1544.,0.,0.,0.,0.]],dtype='f')
+    outputfile.Processes = '\t'.join([p.ljust(16) for p in processes])
+    outputfile.Species = '\t'.join([p.ljust(16) for p in species])
+    outputfile.Reactions = '\t'.join([p.ljust(16) for p in reactions])
+    outputfile = pncgen(outputfile, input['outfile'])
+    return outputfile
 
-    def testBoxAgg(self):
-        self.assert_((self.ext.boxagg(self.vals)==self.ans).all())
-
-    def testAggRxn(self):
-        rxn=0
-        self.ext.aggregate_reaction(rxn,self.vals)
-        self.assert_((self.ext.reaction[:,rxn,:]==self.ans).all())
-
-    def testAggPrc(self):
-        spc=0;prc=1
-        self.ext.aggregate_process(spc,prc,self.vals)
-        self.assert_((self.ext.process[:,spc,prc,:]==self.ans).all())
-    
-    def testMerge(self):
-        from lagrangian import box_id
-        s=zeros((3,2,2,2),'i') # 3 times; 2x2x2 spatial grid
-        s[0,0,0,0]=1 # turn on time 0, 0,0,0 cell
-        s[1,...]=1 # turn on time 1 all cells
-        s[2,1,1,1]=1 #  turn on time 2 1,1,1 cell
-        
-        v=zeros((2,2,2,2),'f') # create values for testing
-        v[0,...]=arange(1,9,dtype='f').reshape((2,2,2)) # assign array with unique values
-        v[1,...]=arange(1,9,dtype='f').reshape((2,2,2))*2
-        
-        # Create an extracted object with 3 procs, 1 species, 1 reaction, 2 times, boxes, and an
-        # even normalizer
-        ext=extracted(['O3'],['INIT','OTHER','FCONC'],['IRR'],boxes(s),ones((2,2,2,2),'f'))
-        
-        # Add values to reactions and both processes
-        ext.aggregate_reaction(0,v)
-        ext.aggregate_process(0,0,v)
-        ext.aggregate_process(0,1,v)
-        ext.aggregate_process(0,2,v*2)
-        
-        # Merge values
-        mrg=ext.merge()
-        # make irr and ipr values easily accessible
-        irr=mrg.variables['IRR']
-        ipr=mrg.variables['IPR']
-        
-        # Check time 0 values
-        self.assertEqual(ipr[0,0,ext.prc.index('INIT')],1.) # INIT
-        self.assertEqual(ipr[0,0,ext.prc.index('OTHER')],36./8.) # OTHER
-        self.assertEqual(ipr[0,0,ext.prc.index('FCONC')],72./8.) # FCONC
-        self.assertEqual(ipr[0,0,ext.prc.index('VENT')],5./2.) # VENT
-        self.assertEqual(ipr[0,0,ext.prc.index('VDET')],0.) # VDET
-        self.assertEqual(ipr[0,0,ext.prc.index('HENT')],30./8.) # HENT
-        self.assertEqual(ipr[0,0,ext.prc.index('HDET')],0.) # HDET
-        self.assertEqual(ipr[0,0,ext.prc.index('EDVDIL')],-0.5) # Dilution
-        self.assertEqual(ipr[0,0,ext.prc.index('EDHDIL')],-2.25) # Dilution
-        self.assertEqual(ipr[0,0,ext.prc.index('TEMPADJ')],0.) # Dilution
-
-        # Check time 1 values
-        self.assertEqual(ipr[1,0,ext.prc.index('INIT')],72./8.) # INIT
-        self.assertEqual(ipr[1,0,ext.prc.index('OTHER')],16.) # other
-        self.assertEqual(ipr[1,0,ext.prc.index('FCONC')],32.) # final
-        self.assertEqual(ipr[1,0,ext.prc.index('VENT')],0) # VENT
-        self.assertEqual(ipr[1,0,ext.prc.index('VDET')],array(0.14285715,'f')) # VDET
-        self.assertEqual(ipr[1,0,ext.prc.index('HENT')],0) # HENT
-        self.assertEqual(ipr[1,0,ext.prc.index('HDET')],array(6.85714293,'f')) # HDET
-        self.assertEqual(ipr[1,0,ext.prc.index('EDVDIL')],0./8.) # Dilution
-        self.assertEqual(ipr[1,0,ext.prc.index('EDHDIL')],0./8.) # Dilution
-        self.assertEqual(ipr[1,0,ext.prc.index('TEMPADJ')],0./8.) # Dilution
-
-        # Use large initial value to create dilution for testing
-        v[0,0,0,0]=10.
-        
-        # recreate extract and remerge
-        ext=extracted(['O3'],['INIT','OTHER','FCONC'],['IRR'],boxes(s),ones((2,2,2,2),'f'))
-        ext.aggregate_reaction(0,v)
-        ext.aggregate_process(0,0,v)
-        ext.aggregate_process(0,1,v)
-        ext.aggregate_process(0,2,v*2)
-        mrg=ext.merge()
-        irr=mrg.variables['IRR']
-        ipr=mrg.variables['IPR']
-        
-        # Check values for time 1
-        self.assertEqual(ipr[0,0,ext.prc.index('INIT')],10.) # INIT
-        self.assertEqual(ipr[0,0,ext.prc.index('OTHER')],5.625) # OTHER
-        self.assertEqual(ipr[0,0,ext.prc.index('FCONC')],11.25) # FCONC
-        self.assertEqual(ipr[0,0,ext.prc.index('VENT')],2.5) # VENT
-        self.assertEqual(ipr[0,0,ext.prc.index('VDET')],0) # VDET
-        self.assertEqual(ipr[0,0,ext.prc.index('HENT')],3.75) # HENT
-        self.assertEqual(ipr[0,0,ext.prc.index('HDET')],0) # HDET
-        self.assertEqual(ipr[0,0,ext.prc.index('EDVDIL')],-5.) # Dilution
-        self.assertEqual(ipr[0,0,ext.prc.index('EDHDIL')],-5.625) # Dilution
-        self.assertEqual(ipr[0,0,ext.prc.index('TEMPADJ')],0./8.) # Dilution
-
-    def runTest(self):
-        pass
-
-
-if __name__=='__main__':
-    unittest.main()
+if __name__ == '__main__':
+    input = load("""
+outfile: test.mrg.nc
+metawrapper: cmaq_pa_master
+files:
+  - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/CCTM_e1a_Darwin9_i386_PA_1.ncf, NetCDFFile]
+  - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/CCTM_e1a_Darwin9_i386_PA_2.ncf, NetCDFFile]
+  - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/CCTM_e1a_Darwin9_i386_PA_3.ncf, NetCDFFile]
+  - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/CCTM_e1a_Darwin9_i386_IRR_1.ncf, NetCDFFile]
+  - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/CCTM_e1a_Darwin9_i386_CONC.ncf, NetCDFFile]
+  - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/../mcip3/M_36_2001/METCRO2D_010722, NetCDFFile]
+  - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/../mcip3/M_36_2001/METCRO3D_010722, NetCDFFile]
+initial: 'INIT'
+species: [NH3] #, ANH4I, ANH4J, ANH4K] #O3, 'NO', NO2, ALD2]
+processes: [AERO, CHEM, CLDS, DDEP, EMIS, HADV, HDIF, VDIF, ZADV, INIT, FCONC]
+reactions: ['IRR_1']
+shape: DEFAULT_SHAPE
+#ascii_mask: ascii_mask.txt
+unitconversions:
+    ppmV:
+        expression: <value>*1000.
+        new_unit: ppb
+    ppm:
+        expression: <value>*1000.
+        new_unit: ppb
+""")
+    ext_mrg(input)
