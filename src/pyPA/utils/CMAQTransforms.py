@@ -1,5 +1,6 @@
 __all__ = ['time_avg_new_unit', 'wind_center_time_cell', 'pypass_cmaq_met_master', 'pypass_cmaq_emiss_master', 'MetaMetPlusAirMols', 'cmaq_pa_master']
 
+import os
 from datetime import datetime
 from warnings import warn
 from numpy import array,ones
@@ -146,7 +147,14 @@ def cmaq_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
     iprf = None
     concf = None
     for p,r in paths_and_readers:
-        thisf = eval(r)(p)
+        if not os.path.exists(p):
+            raise ValueError, "File at %s does not exist" % p
+        
+        try:
+            thisf = eval(r)(p)
+        except:
+            warn("Could not read %s with %s" % (p, r))
+            raise
         files.append(thisf)
         if hasattr(thisf, 'FILEDESC'):
             if iprf is None and ("Integrated Process Rates Output File" in thisf.FILEDESC or "Integrated Reaction Rates Output File" in thisf.FILEDESC):
@@ -215,6 +223,7 @@ def cmaq_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
             master_file.addMetaVariable('FCONC_'+k,FinalLambda(k,tslice,kslice,jslice,islice))
             master_file.addMetaVariable('INITIAL_'+k,InitLambda(k,tslice,kslice,jslice,islice))
             master_file.addMetaVariable('FINAL_'+k,FinalLambda(k,tslice,kslice,jslice,islice))
+    master_file.addMetaVariable('VOL',lambda self: PseudoIOAPIVariable(self,'AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=self.XCELL*self.YCELL*2*CenterTime(self.variables['ZF'][:]-self.variables['ZH'][:])[tslice,kslice,jslice,islice],units='m**3'))
     master_file.addMetaVariable('CONC_AIRMOLS',lambda self: PseudoIOAPIVariable(self,'CONC_AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=CenterTime(self.variables['PRES'][:]/8.314472/self.variables['TA'][:])[tslice,kslice,jslice,islice],units='moles/m**3'))
     master_file.addMetaVariable('AIRMOLS',lambda self: PseudoIOAPIVariable(self,'AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=self.variables['CONC_AIRMOLS'][:]*self.XCELL*self.YCELL*2*CenterTime(self.variables['ZF'][:]-self.variables['ZH'][:])[tslice,kslice,jslice,islice],units='moles'))
     master_file.addMetaVariable('INVAIRMOLS',lambda self: PseudoIOAPIVariable(self,'INVAIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=1/self.variables['AIRMOLS'][:],units='moles'))
