@@ -3,7 +3,7 @@
 #### Rates (IPR/IRR) to create a conceputually well mixed volume that can
 #### be analyzed to conceptually represent physical and chemical evolution.
 ####
-#### There are 5 sections.  Commented options are optional.
+#### There are 4 sections.  Commented options are optional.
 
 ###############################################
 ###### OUTPUT PATH                       ######
@@ -11,14 +11,6 @@
 #### outfile is the path for results
 outfile: cmaq.mrg.nc
 
-###############################################
-###### MODEL/MECHANISM IDENTIFICATION    ######
-###############################################
-#### models supported are cmaq, camx, wrfchem
-#### mechanisms supported cbivmech3
-model: cmaq
-mechanism: cb05cl_ae5_aq
-kaxis: 1
 ###############################################
 ###### INPUT FILES AND READERS           ######
 ###############################################
@@ -41,21 +33,15 @@ files:
 ###############################################
 #### PA needs the name of variables to be used for the
 #### following purposes:
-####  - PA volume shape.  4-D array of booleans that include
+####  - shape:  4-D array of booleans that include
 ####    or exclude cells in IRR/IPR
-####  - Individual cell contribution to overall IRR/IPR weighted 
-####    averages (irr_contribution and ipr_contribution [defaults to 1])
-####  - Cell values to sum for normalization of IRR/IPR weighted
-####    averages (irr_normalizer and ipr_normalizer [defaults to irr/ipr_contribution])
-####  - Conversion of units (irr_unitconversion and ipr_unitconversion [defaults to 1])
+####  - ascii_mask: text file for a 2 dimensional mask
+####    1 is include and 0 exclude from analysis.  A 
+####    value of True will cause a template to be created
 shape: DEFAULT_SHAPE
-init_conc: INIT
-final_conc: FCONC
-irr_contribution: AIRMOLS
-ipr_contribution: AIRMOLS
-normalizer: AIRMOLS
-irr_unitconversion: 1
-ipr_unitconversion: 1
+#ascii_mask: shape2d.txt
+initial: INIT
+final: FCONC
 
 ###############################################
 ###### PA IRR/IPR VARIABES               ######
