@@ -3,7 +3,7 @@ from PseudoNetCDF.MetaNetCDF import file_master, window, newresolution
 from PseudoNetCDF.sci_var import PseudoNetCDFFile, PseudoNetCDFVariable, PseudoNetCDFVariables, Pseudo2NetCDF
 from ..utils.util import AttrDict
 
-from pappt import ext_mrg, MergedWriter
+from pappt import ext_mrg #, MergedWriter
 from pyPA.utils.CAMxFiles import *
 from pyPA.utils.CMAQTransforms import *
 from pyPA.utils.CAMxTransforms import *
@@ -86,110 +86,9 @@ def LoadPAQAFromYAML(yamlfile):
 
 def LoadPyPAFromYAML(yamlfile):
     # Step 0: load YAML file as job, which is an attribute dictionary
-    job = AttrDict(yaml.load(file(yamlfile)))
+    job = yaml.load(file(yamlfile))
+    ext_mrg(job)
     
-    AddDefaults(job)
-
-    pr_rr = eval(job.metawrapper)(job.files)
-    try:
-        spc_iter = job.species
-    except:
-         spc_iter = [key[len(job.init_conc) + 1:] for key in pr_rr.variables.keys() if key[:len(job.init_conc) + 1] == job.init_conc + '_']
-    try:
-        prc_iter = job.processes
-    except:
-        prc_iter = list(set([key[:key.rindex('_')] for key in pr_rr.variables.keys() if '_' in key and key[:2] != 'VD']))
-
-    try:
-        rxn_iter = job.reactions
-    except:
-        rxn_iter = [key for key in pr_rr.variables.keys() if key[:4] in ['RXN_', 'IRR_']]
-
-    # May be scalar
-    if type(job.irr_unitconversion) == str:
-        irr_ucnv = pr_rr.variables[job.irr_unitconversion]
-    else:
-        irr_ucnv = job.irr_unitconversion
-
-    # May be scalar
-    if type(job.ipr_unitconversion) == str:
-        ipr_ucnv = pr_rr.variables[job.ipr_unitconversion]
-    else:
-        ipr_ucnv = job.ipr_unitconversion
-
-    # May be scalar
-    contribution = {}
-    for unit, unit_contribution in job.contribution.iteritems():
-        contribution[unit] = eval(unit_contribution, globals(), pr_rr.variables)
-        try:
-            contribution[unit] = contribution[unit][:]
-        except:
-            pass
-
-
-    if job.normalizer == job.contribution:
-        normalizer = contribution
-    else:
-        if type(job.normalizer) == str:
-            normalizer = pr_rr.variables[job.normalizer]
-        else:
-            normalizer = job.normalizer
-
-    if os.path.exists(job.shape):
-        cols = len(file(job.shape, 'r').readline().split(" "))
-        rows = len([l for l in file(job.shape, 'r').readlines() if l != '\n'])
-        
-        mask = flipud(fromfile(job.shape, sep = " ", dtype = 'bool').reshape(1, 1, rows, cols))
-        try:
-            shape = pr_rr.variables['DEFAULT_SHAPE'][:] * mask
-            print >> sys.stdout, "Using 3D shape; masking PBL with text file %s" % job.shape
-        except KeyError, (e):
-            print >> sys.stdout, "Using 2D shape from text file %s" % job.shape
-            shape = mask * ones((int(pr_rr.dimensions['TSTEP']) + 1, 1, rows, cols), 'bool')
-    else:
-        shape = pr_rr.variables[job.shape][:]
-    
-        
-    
-    kaxis = job.kaxis
-    # Step 2: run ext_mrg and received 5 volume output
-    output_5volumes = ext_mrg(pr_rr, spc_iter, prc_iter, rxn_iter, shape, ipr_ucnv, irr_ucnv, contribution, normalizer, kaxis)
-    
-    # Step 3: merge 5 volume output creating pseudo-processes en(de)train and dilution
-    ipr_irr = output_5volumes.merge()
-    
-
-    # BEGIN STEP 4: add meta data for storage
-    ipr_irr.createDimension('TSTEP_STAG', shape.shape[0])
-    ipr_irr.createDimension('LAY', shape.shape[1])
-    ipr_irr.createDimension('ROW', shape.shape[2])
-    ipr_irr.createDimension('COL', shape.shape[3])
-    ipr_irr.SDATE = pr_rr.SDATE
-    ipr_irr.STIME = pr_rr.STIME
-    ipr_irr.TSTEP = pr_rr.TSTEP
-    ipr_irr.irrfile = '\n'.join([p for p, r in job.files])
-    ipr_irr.iprfile = '\n'.join([p for p, r in job.files])
-    try:
-        SDATE = ipr_irr.SDATE[0]
-        STIME = ipr_irr.STIME[0]
-        TSTEP = ipr_irr.TSTEP[0]
-    except:
-        SDATE = ipr_irr.SDATE
-        STIME = ipr_irr.STIME
-        TSTEP = ipr_irr.TSTEP
-    
-    # BEGIN STEP 5: write merged output to disk and sync buffer to disk
-    outf = MergedWriter(job.outfile, ipr_irr, shape, pr_rr.variables['TFLAG'][:, 0, :])
-    outf.sync()
-    # END STEP 5: write merged output to disk and sync buffer to disk
-    print >> sys.stdout, "Completed pyPA extract, aggregate and merge successfully!"
-    # Skip step 6, which is not useful anymore.
-    # BEGIN STEP 6: send old merge text file to standard out
-    #try:
-    #    {'camx': LegacyMerged, 'cmaq': LegacyMergedCMAQ}[job.model.lower()](sys.stdout, outf)
-    #except:
-    #    pass
-    # END STEP 6: send old merge text file to standard out
 
 def AddDefaults(job):
     try:

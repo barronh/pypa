@@ -243,6 +243,7 @@ files:
   - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/../mcip3/M_36_2001/METCRO2D_010722, NetCDFFile]
   - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/../mcip3/M_36_2001/METCRO3D_010722, NetCDFFile]
 initial: 'INIT'
+final: 'FCONC'
 species: [NH3] #, ANH4I, ANH4J, ANH4K] #O3, 'NO', NO2, ALD2]
 processes: [AERO, CHEM, CLDS, DDEP, EMIS, HADV, HDIF, VDIF, ZADV, INIT, FCONC]
 reactions: ['IRR_1']
