@@ -118,21 +118,17 @@ def LoadPyPAFromYAML(yamlfile):
         ipr_ucnv = job.ipr_unitconversion
 
     # May be scalar
-    if type(job.irr_contribution) == str:
-        irr_contribution = pr_rr.variables[job.irr_contribution]
-    else:
-        irr_contribution = job.irr_contribution
+    contribution = {}
+    for unit, unit_contribution in job.contribution.iteritems():
+        contribution[unit] = eval(unit_contribution, globals(), pr_rr.variables)
+        try:
+            contribution[unit] = contribution[unit][:]
+        except:
+            pass
 
-    if job.ipr_contribution == job.irr_contribution:
-        ipr_contribution = irr_contribution
-    else:
-        if type(job.ipr_contribution) == str:
-            ipr_contribution = pr_rr.variables[job.ipr_contribution]
-        else:
-            ipr_contribution = job.ipr_contribution
 
-    if job.normalizer == job.irr_contribution:
-        normalizer = irr_contribution
+    if job.normalizer == job.contribution:
+        normalizer = contribution
     else:
         if type(job.normalizer) == str:
             normalizer = pr_rr.variables[job.normalizer]
@@ -157,7 +153,7 @@ def LoadPyPAFromYAML(yamlfile):
     
     kaxis = job.kaxis
     # Step 2: run ext_mrg and received 5 volume output
-    output_5volumes = ext_mrg(pr_rr, spc_iter, prc_iter, rxn_iter, shape, ipr_ucnv, irr_ucnv, ipr_contribution, irr_contribution, normalizer, kaxis)
+    output_5volumes = ext_mrg(pr_rr, spc_iter, prc_iter, rxn_iter, shape, ipr_ucnv, irr_ucnv, contribution, normalizer, kaxis)
     
     # Step 3: merge 5 volume output creating pseudo-processes en(de)train and dilution
     ipr_irr = output_5volumes.merge()
