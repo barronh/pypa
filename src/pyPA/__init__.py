@@ -29,6 +29,9 @@ else:
     parser.add_option("-t", "--template", dest="template",action="store_true",default=False,
                         help="Output template on standard out (configurable with -m and -c", metavar="Template")
     
+    parser.add_option("-a", "--ascii", dest="ascii",action="store_true",default=False,
+                        help="Output template ASCII mask file based on yaml configuration file", metavar="ASCII Mask")
+    
     parser.add_option("-m", "--model", dest="model",default="new",
                         help="Model can either be camx, cmaq or wrfchem (for use with -t)", metavar="MODEL")
     paths = glob(os.path.join(os.path.dirname(__file__), 'pappt', 'defaults', '*_*.yaml'))
@@ -44,6 +47,8 @@ else:
         from pyPA.pappt.loader import template
         template(options.model,options.mechanism)
         parser.exit()
+    if options.ascii:
+        exit()
     if len(args)<1:
         parser.error(msg="Requires a yaml file as an argument.  For a template use the -t option.  The template will be output to the stdout.")
     else:
