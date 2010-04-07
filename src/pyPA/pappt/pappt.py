@@ -162,9 +162,12 @@ def ext_mrg(input):
     outputfile = PseudoNetCDFFile()
     try:
         outputfile.createDimension('TSTEP', len(pa_master.dimensions['TSTEP']))
-        outputfile.createDimension('TSTEP_STAG', len(outputfile.dimensions['TSTEP'])+1)
     except:
         outputfile.createDimension('TSTEP', pa_master.dimensions['TSTEP'])
+        
+    try:
+        outputfile.createDimension('TSTEP_STAG', len(outputfile.dimensions['TSTEP'])+1)
+    except:
         outputfile.createDimension('TSTEP_STAG', outputfile.dimensions['TSTEP']+1)
         
     outputfile.createDimension('LAY', mask.shape[dimensions['LAY']])
@@ -227,6 +230,7 @@ def ext_mrg(input):
     outputfile.Processes = '\t'.join([p.ljust(16) for p in processes])
     outputfile.Species = '\t'.join([p.ljust(16) for p in species])
     outputfile.Reactions = '\t'.join([p.ljust(16) for p in reactions])
+    outputfile.PYPAVERSION = '1'
     outputfile = pncgen(outputfile, input['outfile'])
     return outputfile
 
@@ -244,7 +248,7 @@ files:
   - [/Users/barronh/Development/CMAQ/v4.7/data/cctm/../mcip3/M_36_2001/METCRO3D_010722, NetCDFFile]
 initial: 'INIT'
 final: 'FCONC'
-species: [NH3] #, ANH4I, ANH4J, ANH4K] #O3, 'NO', NO2, ALD2]
+species: [NH3, ANH4I] #, ANH4J, ANH4K] #O3, 'NO', NO2, ALD2]
 processes: [AERO, CHEM, CLDS, DDEP, EMIS, HADV, HDIF, VDIF, ZADV, INIT, FCONC]
 reactions: ['IRR_1']
 shape: DEFAULT_SHAPE
