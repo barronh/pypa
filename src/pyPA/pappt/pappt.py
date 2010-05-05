@@ -185,7 +185,7 @@ def ext_mrg(input):
         try:
             var = pa_master.variables[key]
         except KeyError, (e):
-            if ktype == 'p':
+            if ktype in ('p', 'i', 'f'):
                 warn("No %s process variable" % key)
                 var = PseudoNetCDFVariable(pa_master, 'temp', 'f', dimensions_ordered, units = 'None', long_name = key, var_desc = "Dummy values (0) for %s" % key, values = zeros(mask.shape, 'f')[1:])
             else:
