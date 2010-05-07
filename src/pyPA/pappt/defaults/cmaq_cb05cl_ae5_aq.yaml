@@ -43,20 +43,8 @@ metawrapper: cmaq_pa_master
 #### function.
 ####
 #### READER FUNCTIONS BY MODEL
-#### CAMx:
-####  ipr: Integrated process rate file reader
-####  irr: Integrated reaction rate file reader
-####  vertical_diffusivity: vertical diffusivity (aka kv) file reader
-####  height_pressure: height/pressure (aka zp) file reader
 #### CMAQ:
 ####  NetCDFFile: reads all CMAQ IRR, PA, and met data
-#### WRF:
-####  NetCDFFile: reads all WRF IRR, PA, and met data
-#### OTHER:
-####  Any 4-d (time/space) data can be used as long as you provide a reader 
-####  function for the data.  The reader function must return a NetCDFFile
-####  object or a PseudoNetCDF object.  To specify your own reader put a
-####  "from package_name import function_name" statement in place of a reader.
 files: 
   - [CCTM_e1a_Darwin9_i386_PA_1.ncf, NetCDFFile]
   - [CCTM_e1a_Darwin9_i386_PA_2.ncf, NetCDFFile]

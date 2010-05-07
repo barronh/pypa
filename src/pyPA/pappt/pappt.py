@@ -131,6 +131,14 @@ def ext_mrg(input):
     if isinstance(reactions, str):
         reactions = re.compile(reactions)
         reactions = [key for key in pa_master.variables.keys() if reactions.match(key)]
+        ordre = re.compile('\d+')
+        try:
+            reactions = [(int(ordre.search(key).group()), key) for key in reactions]
+            reactions.sort()
+            reactions = [key for ord, key in reactions]
+        except:
+            pass
+        
     
     agg_keys = [(shape_name, 's')]
     agg_keys.extend([(k, 'a') for k in list(set([v for k, v in contributions.iteritems() if v not in ('even',)]+[v for k, v in normalizers.iteritems() if v not in ('even',)]))])
