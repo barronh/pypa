@@ -56,7 +56,7 @@ def pypass_camx_met_master(wind_path,hp_path,temp_path,kv_path,hum_path,cr_path,
      crf=cloud_rain_center_time_plus(cr_path,rows,cols,outunit={'CLOUD':'g/m**3','RAIN':'g/m**3','SNOW':'g/m**3','GRAUPEL':'g/m**3','PRECIP':'g/m**3','PRECIPRATE':'mm/h','COD':'None'},endhour=endhour)
      return file_master([windf,hpf,tempf,kvf,humf,crf])
 
-def camx_pa_master(paths_and_readers,tslice=slice(None),kslice=slice(None),jslice=slice(None),islice=slice(None)):
+def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=None, padom = 1):
     """
     CAMx PA Master presents a single interface for CAMx IPR, IRR, and shape definitions.
     If the shape is not defined, CAMx PA Master can provide a default shape horiztonally
@@ -76,6 +76,10 @@ def camx_pa_master(paths_and_readers,tslice=slice(None),kslice=slice(None),jslic
        kslice - same as tslice, but for layers
        jslice - same as tslice, but for rows
        islice -  - same as tslice, but for columns
+       padom - pa domain 1 is first pa domain
+       
+       if kslice, jslice, or islice are not provided, they will be calculated
+       from pafiles
               
     """
     def defaultshape(self):
@@ -88,6 +92,33 @@ def camx_pa_master(paths_and_readers,tslice=slice(None),kslice=slice(None),jslic
         new_shape[1:,:,:,:]=tops2shape(vertcamx(CenterTime(self.variables['KV']),CenterTime(self.variables['HGHT']))[tslice,jslice,islice],old_shape)
         new_shape[0,:,:,:]=new_shape[1,:,:,:]
         return PseudoIOAPIVariable(self,'DEFAULT_SHAPE','i',('TSTEP', 'LAY', 'ROW', 'COL'),values=new_shape,units='on/off')
+
+    
+    # Find irr or ipr and open as pafile; pafiles have grid
+    # and padomain information that can be used to shape and
+    # subset input files
+    try:
+        paidx = [r for p,r in paths_and_readers].index('irr')
+    except:
+        paidx = [r for p,r in paths_and_readers].index('ipr')
+    p, r = paths_and_readers[paidx]
+    pafile = eval(r)(p)
+    for i, (p, r) in enumerate(paths_and_readers):
+        if r[:5] == 'from ' and 'import' in r:
+            exec r in globals(), locals()
+            paths_and_readers[i][1] = r.split(' ')[-1]
+            
+    padomain = pafile.padomains[0]
+    grid = pafile.grids[padomain['grid']-1]
+    
+    tslice = tslice or slice(None)
+    kslice = kslice or slice(padomain['blay']-1, padomain['tlay'])
+    islice = islice or slice(padomain['istart']-1, padomain['iend'])
+    jslice = jslice or slice(padomain['jstart']-1, padomain['jend'])
+    nrows = grid['nrow']
+    ncols = grid['ncol']
+    
+    paths_and_readers = [(p, {'height_pressure': 'lambda path: height_pressure(path, %d, %d)' % (nrows, ncols), 'vertical_diffusivity': 'lambda path: vertical_diffusivity(path, %d, %d)' % (nrows, ncols)}.get(r, r)) for p,r in paths_and_readers]
 
     # Create a list of opened files
     files=[eval(r)(p) for p,r in paths_and_readers]

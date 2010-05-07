@@ -4,54 +4,102 @@
 #### be analyzed to conceptually represent physical and chemical evolution.
 ####
 #### There are 5 sections.  Commented options are optional.
-outfile: test.camx.nc
 
+###############################################
+###### OUTPUT PATH                       ######
+###############################################
+#### outfile is the path for results
+outfile: camx.mrg.nc
+
+###############################################
+###### MODEL/MECHANISM IDENTIFICATION    ######
+###############################################
+#### models supported are cmaq, camx, wrfchem
+#### mechanisms supported cbivmech3
 model: camx
-mechanism: cbivmech3
-kaxis: 1
+#mechanism: cbivmech3|more-to-come
+
+###############################################
+###### PA META WRAPPERS                  ######
+###############################################
+#### Data that is needed by pyPA often has different
+#### names, forms, and or meta data conventions.  pyPA
+#### provides meta wrappers that will help you work with
+#### specific models.  Please choose the wrapper that goes
+#### with the model you are using.  If your model is not 
+#### provided, try pafile_master. pafile_master is the most
+#### generic.
+metawrapper: camx_pa_master
+
 
 ###############################################
 ###### INPUT FILES AND READERS           ######
 ###############################################
-#### PA will extract all values it needs from a meta 
-#### object (metawrapper) that can reference all necessary
-#### files.  Each file provided must also include a reader
-#### function (e.g. ipr, irr, NetCDFFile, (lambda x: NetCDFFile(x,'r+'))
+#### pyPA uses integrated reaction rate, integrated
+#### process rate, instantaneous concentration data,
+#### and meteorological data from files.  The variables
+#### may be in any number of files with any number of
+#### formats that each have their own readers.  Provide
+#### the path for each file and the name of its reader
+#### function.
 ####
-#### Required: IRR, IPR, [SHAPE | HEIGHT_PRESSURE VERTICAL_DIFF]
-metawrapper: camx_pa_master
+#### READER FUNCTIONS BY MODEL
+#### CAMx:
+####  ipr: Integrated process rate file reader
+####  irr: Integrated reaction rate file reader
+####  vertical_diffusivity: vertical diffusivity (aka kv) file reader
+####  height_pressure: height/pressure (aka zp) file reader
+
 files: 
-  - [<ipr_file_path>, ipr]
-  - [<ipr_file_path>, ipr]
-  - [<kv_file_path>, vertical_diffusivity]
-  - [<zp_file_path>, height_pressure]
+  - [ipr_file_path, ipr]
+  - [irr_file_path, irr]
+  - [kv_file_path, vertical_diffusivity]
+  - [zp_file_path, height_pressure]
 
 
 ###############################################
 ###### PA META VARIABLES                 ######
 ###############################################
-#### PA needs the name of variables to be used for the
-#### following purposes:
-####  - PA volume shape.  4-D array of booleans that include
-####    or exclude cells in IRR/IPR
-####  - Individual cell contribution to overall IRR/IPR weighted 
-####    averages (RXN_contribution and ipr_contribution [defaults to 1])
-####  - Cell values to sum for normalization of IRR/IPR weighted
-####    averages (RXN_normalizer and ipr_normalizer [defaults to irr/ipr_contribution])
-####  - Conversion of units (RXN_unitconversion and ipr_unitconversion [defaults to 1])
+#### PA needs the name of variables to be used
+#### for the following purposes:
+####  shape: name of PA volume shape variable
+####         that is a 4-D array of booleans that 
+####         include or exclude cells in IRR/IPR
+####  init_conc: Initial concentration
+####  final_conc: Final concentration
 shape: DEFAULT_SHAPE
 init_conc: INIT
 final_conc: FCONC
-irr_contribution: AIRMOLS
-ipr_contribution: VOL
-normalizer: AIRMOLS
-irr_unitconversion: 1000
-ipr_unitconversion: 1000
+
+###############################################
+###### 2-D MASK FOR HORIZONTAL SUBSETTING######
+###############################################
+#### PA can subset your domain based on a text
+#### file with 1s (include) and 0s (excluded)
+#### 
+#### ascii_mask: path to text file.  If it does
+####             not exist, a template is created
+#ascii_mask: ascii_mask.txt
+
+
+###############################################
+###### UNIT CONVERSION                   ######
+###############################################
+#### unitconversion: dictionary of units to 
+####      convert.  Each unit to convert has
+####      an expression that is evaluated to
+####      convert the value to a new unit.
+unitconversions:
+    ppmV:
+        expression: <value>*1000.
+        new_unit: ppb
+    ppm:
+        expression: <value>*1000.
+        new_unit: ppb
 
 ###############################################
 ###### PA IRR/IPR VARIABES               ######
 ###############################################
 species: ['NO', 'NO2', 'O3', 'OLE', 'PAN', 'NXOY', 'PAR', 'TOL', 'XYL', 'FORM', 'ALD2', 'ETH', 'CRES', 'MGLY', 'OPEN', 'PNA', 'CO', 'HONO', 'H2O2', 'HNO3', 'ISOP', 'MEOH', 'ETOH']
 processes: ['INIT', 'CHEM', 'EMIS', 'PTEMIS', 'PIG', 'A_W', 'A_E', 'A_S', 'A_N', 'A_B', 'A_T', 'DIL', 'D_W', 'D_E', 'D_S', 'D_N', 'D_B', 'D_T', 'DDEP', 'WDEP', 'AERCHEM', 'FCONC']
-reactions: ['RXN_01', 'RXN_02', 'RXN_03', 'RXN_04', 'RXN_05', 'RXN_06', 'RXN_07', 'RXN_08', 'RXN_09', 'RXN_10', 'RXN_11', 'RXN_12', 'RXN_13', 'RXN_14', 'RXN_15', 'RXN_16', 'RXN_17', 'RXN_18', 'RXN_19', 'RXN_20', 'RXN_21', 'RXN_22', 'RXN_23', 'RXN_24', 'RXN_25', 'RXN_26', 'RXN_27', 'RXN_28', 'RXN_29', 'RXN_30', 'RXN_31', 'RXN_32', 'RXN_33', 'RXN_34', 'RXN_35', 'RXN_36', 'RXN_37', 'RXN_38', 'RXN_39', 'RXN_40', 'RXN_41', 'RXN_42', 'RXN_43', 'RXN_44', 'RXN_45', 'RXN_46', 'RXN_47', 'RXN_48', 'RXN_49', 'RXN_50', 'RXN_51', 'RXN_52', 'RXN_53', 'RXN_54', 'RXN_55', 'RXN_56', 'RXN_57', 'RXN_58', 'RXN_59', 'RXN_60', 'RXN_61', 'RXN_62', 'RXN_63', 'RXN_64', 'RXN_65', 'RXN_66', 'RXN_67', 'RXN_68', 'RXN_69', 'RXN_70', 'RXN_71', 'RXN_72', 'RXN_73', 'RXN_74', 'RXN_75', 'RXN_76', 'RXN_77', 'RXN_78', 'RXN_79', 'RXN_80', 'RXN_81', 'RXN_82', 'RXN_83', 'RXN_84', 'RXN_85', 'RXN_86', 'RXN_87', 'RXN_88', 'RXN_89', 'RXN_90', 'RXN_91', 'RXN_92', 'RXN_93', 'RXN_94', 'RXN_95', 'RXN_96']
-
+reactions: '(IRR|RXN)_.*'

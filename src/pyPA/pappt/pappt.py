@@ -1,10 +1,14 @@
 import sys
 from warnings import warn
 from os.path import exists
+import re
 
 from yaml import load
 
+from PseudoNetCDF.MetaNetCDF import file_master
+
 from pyPA.utils.CMAQTransforms import cmaq_pa_master
+from pyPA.utils.CAMxTransforms import camx_pa_master
 from pyPA.pappt.lagrangian import boxes, box_id
 from pyPA.pappt.pseudo_procs import simple_pseudo_procs
 
@@ -48,7 +52,7 @@ def ext_mrg(input):
     # *Providing default conversion of umol/hr values to ppm for CAMx
     # **<values> is replaced by var[:] which evaluates in the global environment
     #   to the current values
-    unitconversions = {'umol/hr': dict(expression = "<values> / denominator['ppm']", new_unit = 'ppm')}
+    unitconversions = {'umol/hr': dict(expression = "<values> / denominators['ppm']", new_unit = 'ppm')}
     unitconversions.update(input.get('unitconversions', {}))
     for unit, unit_dict in unitconversions.iteritems():
         unitconversions[unit]['expression'] = unitconversions[unit]['expression'].replace('<value>', 'var[:]')
@@ -58,7 +62,7 @@ def ext_mrg(input):
     # each element has a key for the input unit that it converts
     # the value is the name of a variable that can be multiplied to
     # an intrinic unit to obtain an extrinsic unit
-    contributions = {'ppmV': 'AIRMOLS', 'ppm': 'AIRMOLS', 'ppm/h': 'AIRMOLS', 'ppmV/h': 'AIRMOLS', "micrograms/m**3": 'VOL', "umol/hr": "even", "None": "even"}
+    contributions = {'ppmV': 'AIRMOLS', 'ppm': 'AIRMOLS', 'ppm/h': 'AIRMOLS', 'ppmV/h': 'AIRMOLS', 'ppm/hr': 'AIRMOLS', 'ppmV/hr': 'AIRMOLS', "micrograms/m**3": 'VOL', "umol/hr": "even", "None": "even"}
     contributions.update(input.get('contributions', {}))
     
     # extrinsic to intrinsic conversion dictionary
@@ -123,7 +127,10 @@ def ext_mrg(input):
     processes = processes or [key[:-len(temp_spc)-1] for key in pa_master.variables.keys() if '_' + temp_spc == key[-len(temp_spc)-1:]]
 
     reactions = input.get('reactions', None)
-    reactions = reactions or [key for key in pa_master.variables.keys() if 'IRR_' in key]
+    reactions = reactions or '(RXN|IRR)_.*'
+    if isinstance(reactions, str):
+        reactions = re.compile(reactions)
+        reactions = [key for key in pa_master.variables.keys() if reactions.match(key)]
     
     agg_keys = [(shape_name, 's')]
     agg_keys.extend([(k, 'a') for k in list(set([v for k, v in contributions.iteritems() if v not in ('even',)]+[v for k, v in normalizers.iteritems() if v not in ('even',)]))])
@@ -180,7 +187,7 @@ def ext_mrg(input):
     outputfile.variables['TFLAG'] = PseudoNetCDFVariable(outputfile, 'TFLAG', 'i', ('TSTEP', 'VAR', 'DATE-TIME'), units = var.units, long_name = var.long_name, var_desc = var.var_desc, values = var[:][:, [0], :].repeat(len(agg_keys)+1, 1))
     
     for key, ktype in agg_keys:
-        print >> sys.stderr, key, 'start'
+        print >> sys.stdout, key, 
         dimensions = ('TSTEP',)
         try:
             var = pa_master.variables[key]
@@ -215,7 +222,7 @@ def ext_mrg(input):
         
         values = numerator / denominator
         outputfile.variables[key] = PseudoNetCDFVariable(outputfile, key, 'f', dimensions, values = values, units = unit, long_name = var.long_name, var_desc = var.var_desc)
-    
+    print >> sys.stdout
     if reduce_space(bxs).sum(0)[[box_id.HENT, box_id.HDET, box_id.VENT, box_id.VDET]].astype('bool').any():
         simple_pseudo_procs(pa_master = pa_master, outputfile = outputfile, spcs = species, initial = initial, bxs = bxs, norm_bxs = norm_bxs, contributions = contributions, reduce_space = reduce_space)
         processes.extend("VDET VENT HDET HENT EDHDIL EDVDIL".split())
@@ -224,7 +231,7 @@ def ext_mrg(input):
     for name, var in outputfile.variables.iteritems():
         in_unit = var.units.strip()
         if in_unit in unitconversions:
-            var[:] = eval(unitconversions[in_unit]['expression'])
+            var[:] = eval(unitconversions[in_unit]['expression'].replace('<values>', 'var[:]'))
             var.units = unitconversions[in_unit]['new_unit']
     
     outputfile.Processes = '\t'.join([p.ljust(16) for p in processes])

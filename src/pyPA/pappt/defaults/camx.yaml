@@ -4,21 +4,52 @@
 #### be analyzed to conceptually represent physical and chemical evolution.
 ####
 #### There are 5 sections.  Commented options are optional.
-outfile: test.camx.nc
 
+###############################################
+###### OUTPUT PATH                       ######
+###############################################
+#### outfile is the path for results
+outfile: camx.mrg.nc
+
+###############################################
+###### MODEL/MECHANISM IDENTIFICATION    ######
+###############################################
+#### models supported are cmaq, camx, wrfchem
+#### mechanisms supported cbivmech3
 model: camx
-kaxis: 1
+#mechanism: cbivmech3|more-to-come
+
+###############################################
+###### PA META WRAPPERS                  ######
+###############################################
+#### Data that is needed by pyPA often has different
+#### names, forms, and or meta data conventions.  pyPA
+#### provides meta wrappers that will help you work with
+#### specific models.  Please choose the wrapper that goes
+#### with the model you are using.  If your model is not 
+#### provided, try pafile_master. pafile_master is the most
+#### generic.
+metawrapper: camx_pa_master
+
 
 ###############################################
 ###### INPUT FILES AND READERS           ######
 ###############################################
-#### PA will extract all values it needs from a meta 
-#### object (metawrapper) that can reference all necessary
-#### files.  Each file provided must also include a reader
-#### function (e.g. ipr, irr, NetCDFFile, (lambda x: NetCDFFile(x,'r+'))
+#### pyPA uses integrated reaction rate, integrated
+#### process rate, instantaneous concentration data,
+#### and meteorological data from files.  The variables
+#### may be in any number of files with any number of
+#### formats that each have their own readers.  Provide
+#### the path for each file and the name of its reader
+#### function.
 ####
-#### Required: IRR, IPR, [SHAPE | HEIGHT_PRESSURE VERTICAL_DIFF]
-metawrapper: camx_pa_master
+#### READER FUNCTIONS BY MODEL
+#### CAMx:
+####  ipr: Integrated process rate file reader
+####  irr: Integrated reaction rate file reader
+####  vertical_diffusivity: vertical diffusivity (aka kv) file reader
+####  height_pressure: height/pressure (aka zp) file reader
+
 files: 
   - [ipr_file_path, ipr]
   - [irr_file_path, irr]
@@ -29,25 +60,46 @@ files:
 ###############################################
 ###### PA META VARIABLES                 ######
 ###############################################
-#### PA needs the name of variables to be used for the
-#### following purposes:
-####  - PA volume shape.  4-D array of booleans that include
-####    or exclude cells in IRR/IPR
-####  - Individual cell contribution to overall IRR/IPR weighted 
-####    averages (RXN_contribution and ipr_contribution [defaults to 1])
-####  - Cell values to sum for normalization of IRR/IPR weighted
-####    averages (RXN_normalizer and ipr_normalizer [defaults to irr/ipr_contribution])
-####  - Conversion of units (RXN_unitconversion and ipr_unitconversion [defaults to 1])
+#### PA needs the name of variables to be used
+#### for the following purposes:
+####  shape: name of PA volume shape variable
+####         that is a 4-D array of booleans that 
+####         include or exclude cells in IRR/IPR
+####  init_conc: Initial concentration
+####  final_conc: Final concentration
 shape: DEFAULT_SHAPE
 init_conc: INIT
 final_conc: FCONC
-irr_contribution: AIRMOLS
-ipr_contribution: VOL
-normalizer: AIRMOLS
-irr_unitconversion: 1000
-ipr_unitconversion: 1000
+
+###############################################
+###### 2-D MASK FOR HORIZONTAL SUBSETTING######
+###############################################
+#### PA can subset your domain based on a text
+#### file with 1s (include) and 0s (excluded)
+#### 
+#### ascii_mask: path to text file.  If it does
+####             not exist, a template is created
+#ascii_mask: ascii_mask.txt
+
+
+###############################################
+###### UNIT CONVERSION                   ######
+###############################################
+#### unitconversion: dictionary of units to 
+####      convert.  Each unit to convert has
+####      an expression that is evaluated to
+####      convert the value to a new unit.
+unitconversions:
+    ppmV:
+        expression: <value>*1000.
+        new_unit: ppb
+    ppm:
+        expression: <value>*1000.
+        new_unit: ppb
 
 ###############################################
 ###### PA IRR/IPR VARIABES               ######
 ###############################################
-
+species: []
+processes: []
+reactions: '(IRR|RXN)_.*'

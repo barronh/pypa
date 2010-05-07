@@ -3,13 +3,13 @@
 #### Rates (IPR/IRR) to create a conceputually well mixed volume that can
 #### be analyzed to conceptually represent physical and chemical evolution.
 ####
-#### There are 5 sections.  Commented options are optional.
+#### There are 8 sections.  Commented options are optional.
 
 ###############################################
 ###### OUTPUT PATH                       ######
 ###############################################
 #### outfile is the path for results
-outfile: cmaq.mrg.nc
+outfile: test.mrg.nc
 
 ###############################################
 ###### MODEL/MECHANISM IDENTIFICATION    ######
@@ -17,48 +17,99 @@ outfile: cmaq.mrg.nc
 #### models supported are cmaq, camx, wrfchem
 #### mechanisms supported cbivmech3
 model: cmaq
-mechanism: cb05_ae4_aq
-kaxis: 1
+#mechanism: cb05cl_ae5_aq
+
+###############################################
+###### PA META WRAPPERS                  ######
+###############################################
+#### Data that is needed by pyPA often has different
+#### names, forms, and or meta data conventions.  pyPA
+#### provides meta wrappers that will help you work with
+#### specific models.  Please choose the wrapper that goes
+#### with the model you are using.  If your model is not 
+#### provided, try pafile_master. pafile_master is the most
+#### generic.
+metawrapper: cmaq_pa_master
+
 ###############################################
 ###### INPUT FILES AND READERS           ######
 ###############################################
-#### PA will extract all values it needs from a meta 
-#### object (metawrapper) that can reference all necessary
-#### files.  Each file provided must also include a reader
-#### function (e.g. ipr, irr, NetCDFFile, (lambda x: NetCDFFile(x,'r+'))
-metawrapper: cmaq_pa_master
+#### pyPA uses integrated reaction rate, integrated
+#### process rate, instantaneous concentration data,
+#### and meteorological data from files.  The variables
+#### may be in any number of files with any number of
+#### formats that each have their own readers.  Provide
+#### the path for each file and the name of its reader
+#### function.
+####
+#### READER FUNCTIONS BY MODEL
+#### CAMx:
+####  ipr: Integrated process rate file reader
+####  irr: Integrated reaction rate file reader
+####  vertical_diffusivity: vertical diffusivity (aka kv) file reader
+####  height_pressure: height/pressure (aka zp) file reader
+#### CMAQ:
+####  NetCDFFile: reads all CMAQ IRR, PA, and met data
+#### WRF:
+####  NetCDFFile: reads all WRF IRR, PA, and met data
+#### OTHER:
+####  Any 4-d (time/space) data can be used as long as you provide a reader 
+####  function for the data.  The reader function must return a NetCDFFile
+####  object or a PseudoNetCDF object.  To specify your own reader put a
+####  "from package_name import function_name" statement in place of a reader.
 files: 
-  - [../data/cctm/CCTM_e3aPA_1.e3a, NetCDFFile]
-  - [../data/cctm/CCTM_e3aPA_2.e3a, NetCDFFile]
-  - [../data/cctm/CCTM_e3aIRR_1.e3a, NetCDFFile]
-  - [../data/cctm/CCTM_e3aIRR_2.e3a, NetCDFFile]
-  - [../data/cctm/CCTM_e3aCONC.e3a, NetCDFFile]
-  - [../derived/mcip3/METCRO3D_010722, NetCDFFile]
-  - [../derived/mcip3/METCRO2D_010722, NetCDFFile]
+  - [CCTM_e1a_Darwin9_i386_PA_1.ncf, NetCDFFile]
+  - [CCTM_e1a_Darwin9_i386_PA_2.ncf, NetCDFFile]
+  - [CCTM_e1a_Darwin9_i386_PA_3.ncf, NetCDFFile]
+  - [CCTM_e1a_Darwin9_i386_IRR_1.ncf, NetCDFFile]
+  - [CCTM_e1a_Darwin9_i386_CONC.ncf, NetCDFFile]
+  - [../mcip3/M_36_2001/METCRO2D_010722, NetCDFFile]
+  - [../mcip3/M_36_2001/METCRO3D_010722, NetCDFFile]
 
 ###############################################
 ###### PA META VARIABLES                 ######
 ###############################################
-#### PA needs the name of variables to be used for the
-#### following purposes:
-####  - PA volume shape.  4-D array of booleans that include
-####    or exclude cells in IRR/IPR
-####  - Individual cell contribution to overall IRR/IPR weighted 
-####    averages (irr_contribution and ipr_contribution [defaults to 1])
-####  - Cell values to sum for normalization of IRR/IPR weighted
-####    averages (irr_normalizer and ipr_normalizer [defaults to irr/ipr_contribution])
-####  - Conversion of units (irr_unitconversion and ipr_unitconversion [defaults to 1])
+#### PA needs the name of variables to be used
+#### for the following purposes:
+####  shape: name of PA volume shape variable
+####         that is a 4-D array of booleans that 
+####         include or exclude cells in IRR/IPR
+####  init_conc: Initial concentration
+####  final_conc: Final concentration
 shape: DEFAULT_SHAPE
 init_conc: INIT
 final_conc: FCONC
-irr_contribution: AIRMOLS
-ipr_contribution: AIRMOLS
-normalizer: AIRMOLS
-irr_unitconversion: 1
-ipr_unitconversion: 1
+
+
+###############################################
+###### 2-D MASK FOR HORIZONTAL SUBSETTING######
+###############################################
+#### PA can subset your domain based on a text
+#### file with 1s (include) and 0s (excluded)
+#### 
+#### ascii_mask: path to text file.  If it does
+####             not exist, a template is created
+#ascii_mask: ascii_mask.txt
+
+###############################################
+###### UNIT CONVERSION                   ######
+###############################################
+#### unitconversion: dictionary of units to 
+####      convert.  Each unit to convert has
+####      an expression that is evaluated to
+####      convert the value to a new unit.
+unitconversions:
+    ppmV:
+        expression: <value>*1000.
+        new_unit: ppb
+    ppm:
+        expression: <value>*1000.
+        new_unit: ppb
 
 ###############################################
 ###### PA IRR/IPR VARIABES               ######
 ###############################################
 #### optional: defaults to model/mechanism defaults
-
+species: [NH3, ANH4I, ANH4J, ANH4K, 'ATOL2J', 'PAR', 'C2O3', 'SV_TOL2', 'SV_TOL1', 'O3', 'PAN', 'ANH4J', 'ANH4K', 'ALDX', 'SV_SQT', 'SV_XYL1', 'SV_XYL2', 'ATRP2J', 'TOLRO2', 'HCO3', 'ANO3J', 'ANO3K', 'AOLGBJ', 'MEOH', 'SRFACC', 'AH2OI', 'CXO3', 'ALD2', 'HNO3', 'ASO4J', 'ASO4K', 'ASO4I', 'OH', 'ACLI', 'HONO', 'ACLK', 'PACD', 'AECI', 'XYL', 'ACLJ', 'AISO2J', 'ETOH', 'HOCL', 'CRO', 'NO2', 'NO3', 'ROOH', 'N2O5', 'H2O2', 'AXYL2J', 'SRFCOR', 'NUMCOR', 'ROR', 'ATOL3J', 'O', 'IOLE', 'ASOIL', 'AISO1J', 'HCL', 'BENZENE', 'ATRP1J', 'SV_TRP2', 'ANH4I', 'CRES', 'SV_TRP1', 'ANAK', 'XO2N', 'ABNZ2J', 'ANO3I', 'SRFATKN', 'O1D', 'ETH', 'OPEN', 'OLE', 'NO', 'SV_BNZ2', 'SV_BNZ1', 'SV_ISO1', 'SV_ISO2', 'CL2', 'ABNZ3J', 'CLO', 'CO', 'CL', 'ISOP', 'ISPD', 'ATOL1J', 'SULF', 'SESQ', 'AXYL3J', 'NTR', 'AISO3J', 'AALKJ', 'XYLRO2', 'NUMATKN', 'AXYL1J', 'AACD', 'NUMACC', 'TOL', 'MGLY', 'BENZRO2', 'XO2', 'ACORS', 'ANAJ', 'HO2', 'AECJ', 'MEPX', 'TERP', 'FORM', 'AORGCJ', 'PANX', 'ETHA', 'MEO2', 'AOLGAJ', 'FMCL', 'SO2', 'NH3', 'ABNZ1J', 'TO2', 'ASQTJ', 'AH2OK', 'AH2OJ', 'FACD', 'SV_ALK', 'PNA', 'AORGPAJ', 'AORGPAI', 'A25J']
+processes: [AERO, CHEM, CLDS, DDEP, EMIS, HADV, HDIF, VDIF, ZADV, INIT, FCONC]
+reactions: '(IRR|RXN)_.*'

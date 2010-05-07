@@ -17,5 +17,5 @@ if __name__ != '__main__':
     
     from test import run as test
 else:
-    from main import run
+    from pyPA.main import run
     run()
