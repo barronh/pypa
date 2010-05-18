@@ -26,7 +26,7 @@ def ext_mrg(input):
     pa_master = eval(input.get('metawrapper', 'file_master'))(input['files'])
     
     # Analysis volume shape variable name
-    shape_name = input.get('SHAPE', 'DEFAULT_SHAPE')
+    shape_name = input.get('shape', 'DEFAULT_SHAPE')
 
     # Variable dimension order
     #
