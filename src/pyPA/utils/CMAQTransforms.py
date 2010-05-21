@@ -223,11 +223,30 @@ def cmaq_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
         master_file.addMetaVariable('FCONC_'+k,FinalLambda(k,tslice,kslice,jslice,islice))
         master_file.addMetaVariable('INITIAL_'+k,InitLambda(k,tslice,kslice,jslice,islice))
         master_file.addMetaVariable('FINAL_'+k,FinalLambda(k,tslice,kslice,jslice,islice))
+    
+    mhas_key = master_file.variables.has_key
+    if mhas_key('ZF'):
+        master_file.addMetaVariable('VOL',lambda self: PseudoIOAPIVariable(self,'AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=self.XCELL*self.YCELL*2*CenterTime(self.variables['ZF'][:]-self.variables['ZH'][:])[tslice,kslice,jslice,islice],units='m**3'))
+    else:
+        warn('Not calculating VOL\ncmaq_pa_master needs ZF variable to calculate volume; ZF is typically in METCRO3D')
 
-    master_file.addMetaVariable('VOL',lambda self: PseudoIOAPIVariable(self,'AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=self.XCELL*self.YCELL*2*CenterTime(self.variables['ZF'][:]-self.variables['ZH'][:])[tslice,kslice,jslice,islice],units='m**3'))
-    master_file.addMetaVariable('CONC_AIRMOLS',lambda self: PseudoIOAPIVariable(self,'CONC_AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=CenterTime(self.variables['PRES'][:]/8.314472/self.variables['TA'][:])[tslice,kslice,jslice,islice],units='moles/m**3'))
-    master_file.addMetaVariable('AIRMOLS',lambda self: PseudoIOAPIVariable(self,'AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=self.variables['CONC_AIRMOLS'][:]*self.XCELL*self.YCELL*2*CenterTime(self.variables['ZF'][:]-self.variables['ZH'][:])[tslice,kslice,jslice,islice],units='moles'))
-    master_file.addMetaVariable('INVAIRMOLS',lambda self: PseudoIOAPIVariable(self,'INVAIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=1/self.variables['AIRMOLS'][:],units='moles'))
-    master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: PseudoIOAPIVariable(self,'DEFAULT_SHAPE','f',('TSTEP','LAY','ROW','COL'),values=tops2shape(pblhghts2tops(self.variables['PBL'][:],self.variables['ZF'][:]),self.variables['ZF'][:].shape)[tmslice,kslice,jslice,islice],units='on/off'))
+    if mhas_key('TA') and mhas_key('PRES'):
+        master_file.addMetaVariable('AIRDENS',lambda self: PseudoIOAPIVariable(self,'AIRDENS','f',('TSTEP','LAY','ROW','COL'),values=CenterTime(self.variables['PRES'][:]/8.314472/self.variables['TA'][:])[tslice,kslice,jslice,islice],units='moles/m**3'))
+    else:
+        warn('Not calculating AIRDENS\ncmaq_pa_master needs TA (K) and PRES (hPa) variables to calculate AIRDENS (air density in moles/m**3); TA and PRES are typically in METCRO3D')
+        
+    if mhas_key('AIRDENS'):
+        if mhas_key('VOL'):
+            master_file.addMetaVariable('AIRMOLS',lambda self: PseudoIOAPIVariable(self,'AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=self.variables['AIRDENS'][:]*self.variables['VOL'][:],units='moles'))
+            master_file.addMetaVariable('INVAIRMOLS',lambda self: PseudoIOAPIVariable(self,'INVAIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=1/self.variables['AIRMOLS'][:],units='moles'))
+        else:
+            warn('Not calculating AIRMOLS\ncmaq_pa_master needs VOL (volume) to convert AIRDENS (air density in moles/m**3) to extrinsic total air moles')
+    else:
+        warn('Not calculating AIRMOLs\ncmaq_pa_master needs AIRDENS (total air density) to calculate extrinsic (AIRMOLS) total air moles')
+        
+    if mhas_key('PBL'):
+        master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: PseudoIOAPIVariable(self,'DEFAULT_SHAPE','f',('TSTEP','LAY','ROW','COL'),values=tops2shape(pblhghts2tops(self.variables['PBL'][:],self.variables['ZF'][:]),self.variables['ZF'][:].shape)[tmslice,kslice,jslice,islice],units='on/off'))
+    else:
+        warn('Not calculating DEFAULT_SHAPE\ncmaq_pa_master needs PBL variable to defined DEFAULT_SHAPE; PBL is typically in METCRO2D')
     
     return master_file
