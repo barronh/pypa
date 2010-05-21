@@ -85,7 +85,7 @@ def ext_mrg(input):
     # the cells used following the same on/off convection
     # the ascii mask is an ascii map of the domain cells
     # delimmited by spaces.
-    shape = eval(shape_name, locals(), pa_master.variables)
+    shape = eval(shape_name, locals(), pa_master.variables)[:]
     if input.has_key('ascii_mask'):
         ascii_mask = input['ascii_mask']
         if exists(ascii_mask):
@@ -247,6 +247,7 @@ def ext_mrg(input):
     outputfile.Reactions = '\t'.join([p.ljust(16) for p in reactions])
     outputfile.PYPAVERSION = '1'
     outputfile = pncgen(outputfile, input['outfile'])
+    outputfile.sync()
     return outputfile
 
 if __name__ == '__main__':
