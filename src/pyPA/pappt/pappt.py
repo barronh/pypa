@@ -62,7 +62,18 @@ def ext_mrg(input):
     # each element has a key for the input unit that it converts
     # the value is the name of a variable that can be multiplied to
     # an intrinic unit to obtain an extrinsic unit
-    contributions = {'ppmV': 'AIRMOLS', 'ppm': 'AIRMOLS', 'ppm/h': 'AIRMOLS', 'ppmV/h': 'AIRMOLS', 'ppm/hr': 'AIRMOLS', 'ppmV/hr': 'AIRMOLS', "micrograms/m**3": 'VOL', "umol/hr": "even", "None": "even"}
+    contributions = {'ppmV': 'AIRMOLS',
+                     'ppm': 'AIRMOLS',
+                     'ppm/h': 'AIRMOLS',
+                     'ppmV/h': 'AIRMOLS',
+                     'ppm/hr': 'AIRMOLS',
+                     'ppmV/hr': 'AIRMOLS',
+                     'micrograms/m**3': 'VOL',
+                     'm**2/m**3': 'VOL',
+                     'number/m**3': 'VOL',
+                     'umol/hr': 'even',
+                     'None': 'even'}
+                     
     contributions.update(input.get('contributions', {}))
     
     # extrinsic to intrinsic conversion dictionary
@@ -85,7 +96,11 @@ def ext_mrg(input):
     # the cells used following the same on/off convection
     # the ascii mask is an ascii map of the domain cells
     # delimmited by spaces.
-    shape = eval(shape_name, locals(), pa_master.variables)[:]
+    try:
+        shape = eval(shape_name, locals(), pa_master.variables)[:]
+    except:
+        raise UserWarning, '%s is not valid in your files as processed by the metawrapper' % shape_name
+
     if input.has_key('ascii_mask'):
         ascii_mask = input['ascii_mask']
         if exists(ascii_mask):
@@ -150,7 +165,12 @@ def ext_mrg(input):
             agg_keys.append(('_'.join([prc, spc]), ptype))
             
     for k, v in contributions.iteritems():
-        unit_contribution = eval(v, locals(), pa_master.variables)
+        try:
+            unit_contribution = eval(v, locals(), pa_master.variables)
+        except:
+            warn('pyPA could not evaluate %s with the files you provided; if you need %s, make sure you provided all necessary inputs' % (v, v))
+            continue
+            
         if isinstance(unit_contribution, ndarray):
             unit_contribution = unit_contribution[:]
             
@@ -159,7 +179,12 @@ def ext_mrg(input):
     bxs=boxes(shape,kaxis = dimensions['LAY'])
     norm_bxs = {}
     for unit, v in normalizers.iteritems():
-        unit_normalizer = eval(v, locals(), pa_master.variables)
+        try:
+            unit_normalizer = eval(v, locals(), pa_master.variables)
+        except:
+            warn('pyPA could not evaluate %s with the files you provided; if you need %s, make sure you provided all necessary inputs' % (v, v))
+            continue
+            
         if isinstance(unit_normalizer, ndarray):
             unit_contribution = unit_normalizer[:]
             norm_bxs[unit] = reduce_space(bxs * unit_normalizer[..., newaxis])
@@ -170,11 +195,13 @@ def ext_mrg(input):
     
     denominators = {}
     init_denominators = {}
+
     for k, v in normalizers.iteritems():
         denominators[k] = reduce_space(masked_where(mask[1:], v))
         init_denominators[k] = reduce_space(masked_where(mask[:-1], v))
         
     outputfile = PseudoNetCDFFile()
+
     try:
         outputfile.createDimension('TSTEP', len(pa_master.dimensions['TSTEP']))
     except:
