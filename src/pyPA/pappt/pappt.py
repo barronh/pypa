@@ -11,6 +11,7 @@ from pyPA.utils.CMAQTransforms import cmaq_pa_master
 from pyPA.utils.CAMxTransforms import camx_pa_master
 from pyPA.pappt.lagrangian import boxes, box_id
 from pyPA.pappt.pseudo_procs import simple_pseudo_procs
+from pyPA.netcdf import NetCDFFile
 
 def ext_mrg(input):
     from numpy import ndarray, newaxis, where, flipud, fromfile, zeros, ones
@@ -49,10 +50,10 @@ def ext_mrg(input):
     # and new_unit.  expression is a textual expression to perform on the values which
     # should be entered as <values>
     #
-    # *Providing default conversion of umol/hr values to ppm for CAMx
+    # *Providing default conversion of umol/m**3 values to ppm for CAMx
     # **<values> is replaced by var[:] which evaluates in the global environment
     #   to the current values
-    unitconversions = {'umol/hr': dict(expression = "<values> / denominators['ppm']", new_unit = 'ppm')}
+    unitconversions = {'umol/m**3': dict(expression = "<values> * VOL / AIRMOLS", new_unit = 'ppm')}
     unitconversions.update(input.get('unitconversions', {}))
     for unit, unit_dict in unitconversions.iteritems():
         unitconversions[unit]['expression'] = unitconversions[unit]['expression'].replace('<value>', 'var[:]')
@@ -71,7 +72,7 @@ def ext_mrg(input):
                      'micrograms/m**3': 'VOL',
                      'm**2/m**3': 'VOL',
                      'number/m**3': 'VOL',
-                     'umol/hr': 'even',
+                     'umol/m**3': 'VOL',
                      'None': 'even'}
                      
     contributions.update(input.get('contributions', {}))
@@ -136,10 +137,12 @@ def ext_mrg(input):
     
     species = input.get('species', None)
     species = species or [key[len(initial) + 1:] for key in pa_master.variables.keys() if key[:len(initial) + 1] == initial + '_']
-
+    species = list(set(species))
+    
     temp_spc = species[0]
     processes = input.get('processes', None)
     processes = processes or [key[:-len(temp_spc)-1] for key in pa_master.variables.keys() if '_' + temp_spc == key[-len(temp_spc)-1:]]
+    processes = list(set(processes))
 
     reactions = input.get('reactions', None)
     reactions = reactions or '(RXN|IRR)_.*'
@@ -153,6 +156,8 @@ def ext_mrg(input):
             reactions = [key for ord, key in reactions]
         except:
             pass
+    else:
+        reactions = list(set(reactions))
         
     
     agg_keys = [(shape_name, 's')]
@@ -186,12 +191,12 @@ def ext_mrg(input):
             continue
             
         if isinstance(unit_normalizer, ndarray):
-            unit_contribution = unit_normalizer[:]
+            unit_normalizer = unit_normalizer[:]
             norm_bxs[unit] = reduce_space(bxs * unit_normalizer[..., newaxis])
         else:
             norm_bxs[unit] = reduce_space(bxs * unit_normalizer)
             
-        normalizers[unit] = unit_contribution
+        normalizers[unit] = unit_normalizer
     
     denominators = {}
     init_denominators = {}
@@ -230,6 +235,8 @@ def ext_mrg(input):
             if ktype in ('p', 'i', 'f'):
                 warn("No %s process variable" % key)
                 var = PseudoNetCDFVariable(pa_master, 'temp', 'f', dimensions_ordered, units = 'None', long_name = key, var_desc = "Dummy values (0) for %s" % key, values = zeros(mask.shape, 'f')[1:])
+            elif ktype == 'a':
+                pass
             else:
                 raise KeyError, "No %s variable" % key
 
@@ -265,9 +272,12 @@ def ext_mrg(input):
     
     for name, var in outputfile.variables.iteritems():
         in_unit = var.units.strip()
-        if in_unit in unitconversions:
-            var[:] = eval(unitconversions[in_unit]['expression'].replace('<values>', 'var[:]'))
-            var.units = unitconversions[in_unit]['new_unit']
+        while in_unit in unitconversions:
+            out_unit = unitconversions[in_unit]['new_unit'].strip()
+            expression_str = unitconversions[in_unit]['expression'].replace('<values>', 'var[:]')
+            var[:] = eval(expression_str, globals(), outputfile.variables)
+            var.units = out_unit.ljust(16)
+            in_unit = out_unit
     
     outputfile.Processes = '\t'.join([p.ljust(16) for p in processes])
     outputfile.Species = '\t'.join([p.ljust(16) for p in species])
@@ -305,3 +315,4 @@ unitconversions:
         new_unit: ppb
 """)
     ext_mrg(input)
+    
