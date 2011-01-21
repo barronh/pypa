@@ -14,7 +14,7 @@ from pyPA.pappt.pseudo_procs import simple_pseudo_procs
 from pyPA.netcdf import NetCDFFile
 
 def ext_mrg(input):
-    from numpy import ndarray, newaxis, where, flipud, fromfile, zeros, ones
+    from numpy import ndarray, newaxis, where, fromfile, zeros, ones
     from numpy.ma import masked_where, masked_invalid
     from PseudoNetCDF import PseudoNetCDFFile, PseudoNetCDFVariable
     from PseudoNetCDF.pncgen import pncgen
@@ -73,7 +73,7 @@ def ext_mrg(input):
                      'm**2/m**3': 'VOL',
                      'number/m**3': 'VOL',
                      'umol/m**3': 'VOL',
-                     'None': 'even'}
+                     'None': '1'}
                      
     contributions.update(input.get('contributions', {}))
     
@@ -108,7 +108,7 @@ def ext_mrg(input):
             cols = len(file(ascii_mask, 'r').readline().split(" "))
             rows = len([l for l in file(ascii_mask, 'r').readlines() if l != '\n'])
             
-            ascii_mask = flipud(fromfile(ascii_mask, sep = " ", dtype = 'bool').reshape(1, 1, rows, cols))
+            ascii_mask = fromfile(ascii_mask, sep = " ", dtype = 'bool').reshape(1, 1, rows, cols)[:, :, ::-1, :]
             shape = shape * ascii_mask
             
         else:
@@ -133,7 +133,6 @@ def ext_mrg(input):
         return out
                 
     mask = shape.astype('bool') == False
-    even = ones(mask.shape, 'f')[1:]
     
     species = input.get('species', None)
     species = species or [key[len(initial) + 1:] for key in pa_master.variables.keys() if key[:len(initial) + 1] == initial + '_']
@@ -161,7 +160,7 @@ def ext_mrg(input):
         
     
     agg_keys = [(shape_name, 's')]
-    agg_keys.extend([(k, 'a') for k in list(set([v for k, v in contributions.iteritems() if v not in ('even',)]+[v for k, v in normalizers.iteritems() if v not in ('even',)]))])
+    agg_keys.extend([(k, 'a') for k in list(set([v for k, v in contributions.iteritems()]+[v for k, v in normalizers.iteritems()]))])
     agg_keys.extend([(rxn, 'r') for rxn in reactions])
     
     for spc in species:
@@ -194,7 +193,7 @@ def ext_mrg(input):
             unit_normalizer = unit_normalizer[:]
             norm_bxs[unit] = reduce_space(bxs * unit_normalizer[..., newaxis])
         else:
-            norm_bxs[unit] = reduce_space(bxs * unit_normalizer)
+            norm_bxs[unit] = ones(bxs[:, 0, 0, 0, :].shape) * unit_normalizer
             
         normalizers[unit] = unit_normalizer
     
@@ -202,20 +201,24 @@ def ext_mrg(input):
     init_denominators = {}
 
     for k, v in normalizers.iteritems():
-        denominators[k] = reduce_space(masked_where(mask[1:], v))
-        init_denominators[k] = reduce_space(masked_where(mask[:-1], v))
+        if isinstance(v, ndarray):
+            denominators[k] = reduce_space(masked_where(mask[1:], v))
+            init_denominators[k] = reduce_space(masked_where(mask[:-1], v))
+        else:
+            denominators[k] = 1
+            init_denominators[k] = 1
+
         
     outputfile = PseudoNetCDFFile()
+    
+    def getdimlen(dim):
+        try:
+            return len(dim)
+        except TypeError:
+            return dim
 
-    try:
-        outputfile.createDimension('TSTEP', len(pa_master.dimensions['TSTEP']))
-    except:
-        outputfile.createDimension('TSTEP', pa_master.dimensions['TSTEP'])
-        
-    try:
-        outputfile.createDimension('TSTEP_STAG', len(outputfile.dimensions['TSTEP'])+1)
-    except:
-        outputfile.createDimension('TSTEP_STAG', outputfile.dimensions['TSTEP']+1)
+    outputfile.createDimension('TSTEP', getdimlen(pa_master.dimensions['TSTEP']))
+    outputfile.createDimension('TSTEP_STAG', getdimlen(outputfile.dimensions['TSTEP'])+1)
         
     outputfile.createDimension('LAY', mask.shape[dimensions['LAY']])
     outputfile.createDimension('ROW', mask.shape[dimensions['ROW']])
@@ -236,7 +239,7 @@ def ext_mrg(input):
                 warn("No %s process variable" % key)
                 var = PseudoNetCDFVariable(pa_master, 'temp', 'f', dimensions_ordered, units = 'None', long_name = key, var_desc = "Dummy values (0) for %s" % key, values = zeros(mask.shape, 'f')[1:])
             elif ktype == 'a':
-                pass
+                continue
             else:
                 raise KeyError, "No %s variable" % key
 
@@ -248,6 +251,7 @@ def ext_mrg(input):
         mask_slice = slice(1, None)
         
         if ktype in ('a',):
+            print >> sys.stdout, key
             numerator = reduce_space(masked_where(mask[mask_slice], var[:]))
             denominator = 1
         elif ktype in ('s',):
@@ -265,17 +269,19 @@ def ext_mrg(input):
         values = numerator / denominator
         outputfile.variables[key] = PseudoNetCDFVariable(outputfile, key, 'f', dimensions, values = values, units = unit, long_name = var.long_name, var_desc = var.var_desc)
     print >> sys.stdout
+    
     if reduce_space(bxs).sum(0)[[box_id.HENT, box_id.HDET, box_id.VENT, box_id.VDET]].astype('bool').any():
         simple_pseudo_procs(pa_master = pa_master, outputfile = outputfile, spcs = species, initial = initial, bxs = bxs, norm_bxs = norm_bxs, contributions = contributions, reduce_space = reduce_space)
         processes.extend("VDET VENT HDET HENT EDHDIL EDVDIL".split())
     
-    
+    # For each variable, change the unit until there
+    # is no change left.
     for name, var in outputfile.variables.iteritems():
         in_unit = var.units.strip()
         while in_unit in unitconversions:
             out_unit = unitconversions[in_unit]['new_unit'].strip()
             expression_str = unitconversions[in_unit]['expression'].replace('<values>', 'var[:]')
-            var[:] = eval(expression_str, globals(), outputfile.variables)
+            var[:] = eval(expression_str, locals(), outputfile.variables)
             var.units = out_unit.ljust(16)
             in_unit = out_unit
     
