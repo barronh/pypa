@@ -95,30 +95,47 @@ def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
         return PseudoIOAPIVariable(self,'DEFAULT_SHAPE','i',('TSTEP', 'LAY', 'ROW', 'COL'),values=new_shape,units='on/off')
 
     
-    # Find irr or ipr and open as pafile; pafiles have grid
-    # and padomain information that can be used to shape and
-    # subset input files
-    try:
-        paidx = [r for p,r in paths_and_readers].index('irr')
-    except:
-        paidx = [r for p,r in paths_and_readers].index('ipr')
-    p, r = paths_and_readers[paidx]
-    pafile = eval(r)(p)
     for i, (p, r) in enumerate(paths_and_readers):
         if r[:5] == 'from ' and 'import' in r:
             exec r in globals(), locals()
             paths_and_readers[i][1] = r.split(' ')[-1]
+
+    # Find irr or ipr and open as pafile; pafiles have grid
+    # and padomain information that can be used to shape and
+    # subset input files
+    pafiles = ([(p, r) for p,r in paths_and_readers if r == 'irr'] +
+               [(p, r) for p,r in paths_and_readers if r == 'irr'])
+
+    if pafiles != []:
+        p, r = pafiles[0]
+        pafile = eval(r)(p)
             
-    padomain = pafile.padomains[0]
-    grid = pafile.grids[padomain['grid']-1]
-    
-    tslice = tslice or slice(None)
-    kslice = kslice or slice(padomain['blay']-1, padomain['tlay'])
-    islice = islice or slice(padomain['istart']-1, padomain['iend'])
-    jslice = jslice or slice(padomain['jstart']-1, padomain['jend'])
-    nrows = grid['nrow']
-    ncols = grid['ncol']
-    
+        padomain = pafile.padomains[0]
+        grid = pafile.grids[padomain['grid']-1]
+        
+        tslice = tslice or slice(None)
+        kslice = kslice or slice(padomain['blay']-1, padomain['tlay'])
+        islice = islice or slice(padomain['istart']-1, padomain['iend'])
+        jslice = jslice or slice(padomain['jstart']-1, padomain['jend'])
+        nrows = grid['nrow']
+        ncols = grid['ncol']
+    else:
+        tslice = tslice or slice(None)
+        kslice = kslice or slice(None)
+        islice = islice or slice(None)
+        jslice = jslice or slice(None)
+        for p, r in paths_and_readers:
+            tempfile = eval(r)(p)
+            if 'COL' in tempfile.dimensions and 'ROW' in tempfile.dimensions:
+                nrows = tempfile.dimensions['ROW']
+                ncols = tempfile.dimensions['COL']
+                if not isinstance(nrows, int):
+                    nrows = len(nrows)
+                    ncols = len(ncols)
+                break
+        else:
+            raise KeyError, "No files had COL and ROW dimensions"
+            
     paths_and_readers = [(p, {'height_pressure': 'lambda path: height_pressure(path, %d, %d)' % (nrows, ncols), 'vertical_diffusivity': 'lambda path: vertical_diffusivity(path, %d, %d)' % (nrows, ncols)}.get(r, r)) for p,r in paths_and_readers]
 
     # Create a list of opened files
