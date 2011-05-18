@@ -1,5 +1,7 @@
-from distutils.core import setup
-#from setuptools import setup
+try:
+    from setuptools import setup
+except:
+    from distutils.core import setup
 import os
 import sys
 from warnings import warn
@@ -9,7 +11,21 @@ netcdf_pkgs = [('netCDF4', 'Dataset'), \
 for pkg, reader in netcdf_pkgs:
     try:
         NetCDFFile = getattr(__import__(pkg, fromlist = [reader]),reader)
-        print >> file(os.path.join('src', 'pyPA','netcdf.py'),'wb'), """
+        define_function = "from %s import %s as NetCDFFile" % (pkg, reader)
+        netcdfpkg = [pkg]
+        break
+    except ImportError, e:
+        warn(e.message)
+else:
+    warn("Did not find a 'true' NetCDFFile reader; 'true' NetCDF functionality will be disabled")
+    netcdfpkg = []
+    define_function = """
+class NetCDFFile(object):
+    def __init__(self, *args, **kwds):
+        raise ImportError('System has no valid netCDF reader; install netcdf4-python or pupynere')
+"""
+
+print >> file(os.path.join('src', 'PseudoNetCDF', 'netcdf.py'),'wb'), """
 __all__ = ['NetCDFFile']
 __doc__ = \"\"\"
 .. _netcdf
@@ -23,13 +39,8 @@ __doc__ = \"\"\"
               selects it and provides it.
 .. moduleauthor:: Barron Henderson <barronh@unc.edu>
 \"\"\"
-from %s import %s as NetCDFFile
-""" % (pkg,reader)
-        break
-    except ImportError, e:
-        warn(e.message)
-else:
-    raise ImportError, "Did not find a NetCDFFile object"
+%s
+""" % define_function
 
 def find_packages():
     import os
@@ -67,6 +78,6 @@ setup(name = 'pyPA',
       packages = packages,
       package_dir = {'': 'src'},
       package_data = {'pyPA': data},
-      requires = [pkg, 'numpy (>=1.2)', 'yaml', 'PseudoNetCDF'],
+      requires = netcdfpkg + ['numpy (>=1.2)', 'yaml', 'PseudoNetCDF'],
       url = 'https://dawes.sph.unc.edu/trac/pyPA'
       )
