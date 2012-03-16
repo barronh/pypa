@@ -104,7 +104,7 @@ def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
     # and padomain information that can be used to shape and
     # subset input files
     pafiles = ([(p, r) for p,r in paths_and_readers if r == 'irr'] +
-               [(p, r) for p,r in paths_and_readers if r == 'irr'])
+               [(p, r) for p,r in paths_and_readers if r == 'ipr'])
 
     if pafiles != []:
         p, r = pafiles[0]

@@ -161,6 +161,16 @@ def cmaq_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
                 iprf = thisf
             if "Concentration file output" in thisf.FILEDESC:
                 concf = thisf
+    if iprf is None:
+        for thisf in files:
+            if 'CHEM_O3' in thisf.variables:
+                iprf = thisf
+                break
+    if concf is None:
+        for thisf in files:
+            if 'O3' in  thisf.variables:
+                concf = thisf
+                break
 
     master_file=file_master(files)
     
@@ -210,14 +220,23 @@ def cmaq_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
                 Looking at FILEDESC properties for "Integrated Process Rates Output File" or
                 "Integrated Reaction Rates Output File" and "Concentration file output"
                 """)
-
+    
+    if iprf is not None:
+        master_file.dimensions['TSTEP'] = len(iprf.dimensions['TSTEP'])
+        master_file.variables['TFLAG'] = iprf.variables['TFLAG']
+    elif concf is not None:
+        master_file.dimensions['TSTEP'] = len(concf.dimensions['TSTEP']) - 1
+        master_file.variables['TFLAG'] = PseudoIOAPIVariable(master_file, 'TFLAG', 'i', ('TSTEP', 'VAR', 'DATE-TIME'), values = concf.variables['TFLAG'][:-1])
     def InitLambda(x,tslice,kslice,jslice,islice):
         return lambda self: PseudoIOAPIVariable(self,x,'f',('TSTEP','LAY','ROW','COL'),values=self.variables[x][:-1,:,:,:][tslice,kslice,jslice,islice],units=self.variables[x].units)
     def FinalLambda(x,tslice,kslice,jslice,islice):
         return lambda self: PseudoIOAPIVariable(self,x,'f',('TSTEP','LAY','ROW','COL'),values=self.variables[x][1:,:,:,:][tslice,kslice,jslice,islice],units=self.variables[x].units)
     def MetLambda(x,tslice,kslice,jslice,islice):
         return lambda self: PseudoIOAPIVariable(self,x,'f',('TSTEP','LAY','ROW','COL'),values=CenterTime(self.variables[x])[tslice,kslice,jslice,islice],units=self.variables[x].units)
-    all_keys = [k for k in master_file.variables.keys()]
+    if concf is not None:
+        all_keys = [k for k in concf.variables.keys() if k != 'TFLAG']
+    else:
+        all_keys = [k for k in master_file.variables.keys()]
     for k in all_keys:
         master_file.addMetaVariable('INIT_'+k,InitLambda(k,tslice,kslice,jslice,islice))
         master_file.addMetaVariable('FCONC_'+k,FinalLambda(k,tslice,kslice,jslice,islice))

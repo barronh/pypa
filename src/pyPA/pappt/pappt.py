@@ -289,7 +289,8 @@ def ext_mrg(input):
     outputfile.Species = '\t'.join([p.ljust(16) for p in species])
     outputfile.Reactions = '\t'.join([p.ljust(16) for p in reactions])
     outputfile.PYPAVERSION = '1'
-    outputfile = pncgen(outputfile, input['outfile'])
+    from pyPA.netcdf import NetCDFFile
+    outputfile = pncgen(outputfile, NetCDFFile(input['outfile'], 'w'))
     outputfile.sync()
     return outputfile
 

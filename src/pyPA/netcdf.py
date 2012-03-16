@@ -12,5 +12,9 @@ __doc__ = """
               selects it and provides it.
 .. moduleauthor:: Barron Henderson <barronh@unc.edu>
 """
-from netCDF4 import Dataset as NetCDFFile
+from netCDF4 import Dataset
+class NetCDFFile(Dataset):
+    def __new__(cls, *args, **kwds):
+        kwds.setdefault('format', 'NETCDF3_CLASSIC')
+        return Dataset(*args, **kwds)
 
