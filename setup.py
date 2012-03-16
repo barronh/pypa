@@ -25,7 +25,7 @@ class NetCDFFile(object):
         raise ImportError('System has no valid netCDF reader; install netcdf4-python or pupynere')
 """
 
-print >> file(os.path.join('src', 'PseudoNetCDF', 'netcdf.py'),'wb'), """
+print >> file(os.path.join('src', 'pyPA', 'netcdf.py'),'wb'), """
 __all__ = ['NetCDFFile']
 __doc__ = \"\"\"
 .. _netcdf
