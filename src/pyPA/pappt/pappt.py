@@ -6,12 +6,14 @@ import re
 from yaml import load
 
 from PseudoNetCDF.MetaNetCDF import file_master
+from PseudoNetCDF import PseudoNetCDFVariable
 
 from pyPA.utils.CMAQTransforms import cmaq_pa_master
 from pyPA.utils.CAMxTransforms import camx_pa_master
 from pyPA.pappt.lagrangian import boxes, box_id
 from pyPA.pappt.pseudo_procs import simple_pseudo_procs
 from pyPA.netcdf import NetCDFFile
+
 
 def ext_mrg(input):
     from numpy import ndarray, newaxis, where, fromfile, zeros, ones
@@ -69,10 +71,25 @@ def ext_mrg(input):
                      'ppmV/h': 'AIRMOLS',
                      'ppm/hr': 'AIRMOLS',
                      'ppmV/hr': 'AIRMOLS',
+                     'ugram/m**3': 'VOL',
+                     'ugrams/m**3': 'VOL',
+                     'microgram/m**3': 'VOL',
                      'micrograms/m**3': 'VOL',
                      'm**2/m**3': 'VOL',
                      'number/m**3': 'VOL',
                      'umol/m**3': 'VOL',
+                     'umols/m**3': 'VOL',
+                     'micromol/m**3': 'VOL',
+                     'micromols/m**3': 'VOL',
+                     'micromole/m**3': 'VOL',
+                     'micromoles/m**3': 'VOL',
+                     'm**3/mol': 'AIRMOLS',
+                     'm**3/mole': 'AIRMOLS',
+                     'm**3/moles': 'AIRMOLS',
+                     'm**3': '1',
+                     'mol': '1',
+                     'mole': '1',
+                     'moles': '1',
                      'None': '1'}
                      
     contributions.update(input.get('contributions', {}))
@@ -232,6 +249,7 @@ def ext_mrg(input):
     for key, ktype in agg_keys:
         print >> sys.stdout, key, 
         dimensions = ('TSTEP',)
+        print key
         try:
             var = pa_master.variables[key]
         except KeyError, (e):

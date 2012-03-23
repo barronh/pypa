@@ -1,8 +1,10 @@
 __all__ = ['point_source_newvarnames', 'pypass_camx_met_master', 'camx_pa_master', 'hght2dz', 'hght2zh', 'pypass_camx_emiss_master']
 
+
+from warnings import warn
 from ..netcdf import NetCDFFile
 ncf = NetCDFFile
-from numpy import zeros
+from numpy import zeros, ones
 from PseudoNetCDF.ArrayTransforms import CenterTime
 from PseudoNetCDF.camxfiles.wind.Transforms import wind_center_time_cell
 from PseudoNetCDF.camxfiles.height_pressure.Transforms import height_pressure_center_time_plus, \
@@ -167,10 +169,12 @@ def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
     # on vertical diffusivity and layer structure.
     mhas_key = master_file.variables.has_key
     if mhas_key('KV') and mhas_key('HGHT'):
-            master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self))
+        master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self))
     else:
-        warn('Not providing DEFAULT_SHAPE\ncamx_pa_master needs KV from vertical_diffusivity (kv) file and HGHT from height/pressure (zp) file to diagnose the planetary boundary layer and provide DEFAULT_SHAPE')
-    
+        warn('Cannot diagnose 3-D DEFAULT_SHAPE\ncamx_pa_master needs KV from vertical_diffusivity (kv) file and HGHT from height/pressure (zp) file to diagnose the planetary boundary layer and provide DEFAULT_SHAPE')
+        warn('Providing all cells.')
+        all_vals = ones(map(lambda x: len(master_file.dimensions[x]) + 1 if x == 'TSTEP' else len(master_file.dimensions[x]), ('TSTEP', 'LAY', 'ROW', 'COL')), dtype = 'i')
+        master_file.addMetaVariable('DEFAULT_SHAPE', lambda self: PseudoIOAPIVariable(self,'DEFAULT_SHAPE','i',('TSTEP', 'LAY', 'ROW', 'COL'),values=all_vals,units='on/off'))
     return master_file
 
 
