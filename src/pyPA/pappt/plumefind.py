@@ -5,20 +5,21 @@ from ..utils.unitconversions import getextrinsic
 import sys
 
 def mass_threshold(nfile, propkey, massthreshhold = .9, tracer = False, volmax = inf):
-    conc = nfile.variables[propkey]
+    conc = eval(propkey, nfile.variables)
+    firstkey = propkey.split('+')[0]
     mass = getextrinsic(nfile, propkey)
     if not tracer:
         factor = mass / conc
         conc2 = conc.copy()
         conc2.shape = conc2.shape[:2] + (prod(conc2.shape[2:]),)
-        conc = conc[:] - percentile(conc2, [90], axis = 2)[0][:, :, None, None]
+        conc = conc[:] - percentile(conc2, [84.13], axis = 2)[0][:, :, None, None]
         conc = where(conc < 0, 0, conc)
         mass = factor * conc
     total_mass = mass.sum(1).sum(1).sum(1)
     vol = nfile.variables['VOL']
     tflag = nfile.variables['TFLAG']
     shape = ones(conc.shape , 'i')
-    print >> sys.stdout, "Hr", "Fraction", "Captured", "Available", "(all mass)"
+    print >> sys.stdout, "[Day Hr]", "Mass Fraction", "Mass Captured", "Total Mass Available"
     for hri, (hrconc, hrmass, hrtot) in enumerate(zip(conc, mass, total_mass)):
         hrpeak = hrconc.max()
         factor = 0.
@@ -54,12 +55,12 @@ def mass_threshold(nfile, propkey, massthreshhold = .9, tracer = False, volmax =
     for pk in tflag.ncattrs():
         setattr(newtflag, pk, getattr(tflag, pk))
     
-    shapev = f.createVariable(('PLUME%.2f' % massthreshhold).replace('.', 'pt'), 'i', nfile.variables[propkey].dimensions)
+    shapev = f.createVariable(('PLUME%.2f' % massthreshhold).replace('.', 'pt'), 'i', nfile.variables[firstkey].dimensions)
     shapev[:] = shape[:]
     shapev.units = 'ON/OFF'
     from PseudoNetCDF import Pseudo2NetCDF
     conv = Pseudo2NetCDF()
-    conv.addVariable(nfile, f, propkey)
+    conv.addVariable(nfile, f, firstkey)
     f.variables[propkey][:] = conc
     f.variables[propkey].expression = 'val - 90(%) in horizontal layer'
     f.close()
@@ -74,13 +75,15 @@ if __name__ == '__main__':
     try:
         input = yaml.load(file(sys.argv[1], 'r'))
         pa_master = eval(input.get('metawrapper', 'file_master'))(input['files'])
-        mass_threshold(pa_master, sys.argv[2], massthreshhold = .9, volmax = inf)
+        mass_threshold(pa_master, sys.argv[2], massthreshhold = .9, volmax = inf, tracer = eval(sys.argv[3]))
     except:
         print
         print
         print '======================================================='
-        print 'python -m pyPA.pappt.plumefind <config.yaml> <VARIABLE>'
-        print ' - config.yaml - path to a pyPA configuration file.'
-        print ' - VARIABLE - string identifying the variable to use.'
+        print 'python -m pyPA.pappt.plumefind <config.yaml> <VARIABLE> <TRACER>'
+        print ' - config.yaml: path to a pyPA configuration file.'
+        print ' - VARIABLE: string identifying the variable to use.'
+        print ' - TRACER: 0 if this is a standard compound; 1 if it is'
+        print '           emitted exclusively to trace the plume.'
         print '======================================================='
         print
