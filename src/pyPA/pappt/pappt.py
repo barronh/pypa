@@ -308,7 +308,7 @@ def ext_mrg(input):
     outputfile.Reactions = '\t'.join([p.ljust(16) for p in reactions])
     outputfile.PYPAVERSION = '1'
     from pyPA.netcdf import NetCDFFile
-    outputfile = pncgen(outputfile, NetCDFFile(input['outfile'], 'w'))
+    outputfile = pncgen(outputfile, NetCDFFile(input['outfile'], mode = 'w', format = 'NETCDF3_CLASSIC'))
     outputfile.sync()
     return outputfile
 

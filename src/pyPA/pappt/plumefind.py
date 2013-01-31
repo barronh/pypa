@@ -1,8 +1,22 @@
-from netCDF4 import Dataset
+from ..netcdf import NetCDFFile
 from numpy import *
 from PseudoNetCDF.camxfiles.Memmaps import uamiv
 from ..utils.unitconversions import getextrinsic
 import sys
+
+def getlen(dk, dv):
+    if dk == 'VAR':
+        return 1
+    elif dk == 'TSTEP':
+        if isinstance(dv, int):
+            return dv + 1
+        else:
+            return len(dv) + 1
+    else:
+        if isinstance(dv, int):
+            return dv
+        else:
+            return len(dv)
 
 def mass_threshold(nfile, propkey, massthreshhold = .9, tracer = False, volmax = inf):
     conc = eval(propkey, nfile.variables)
@@ -44,25 +58,31 @@ def mass_threshold(nfile, propkey, massthreshhold = .9, tracer = False, volmax =
         
         print >> sys.stdout, tflag[hri,0,:], capt_mass/hrtot, capt_mass, hrtot
         shape[hri] = hrshape
-    f = Dataset('massthresh.nc', 'w')
+    f = NetCDFFile('massthresh.nc', 'w', format = 'NETCDF3_CLASSIC')
     for dk, dv in nfile.dimensions.iteritems():
-        f.createDimension(dk, (dv if isinstance(dv, int) else len(dv)) if dk != 'VAR' else 1)
+        f.createDimension(dk, getlen(dk, dv))
     for pk in nfile.ncattrs():
         setattr(f, pk, getattr(nfile, pk))
     
     newtflag = f.createVariable('TFLAG', 'i', tflag.dimensions)
-    newtflag[:] = tflag[:, [0], :]
+    newtflag[1:] = tflag[:, [0], :]
+    newtflag[0] = tflag[0, [0], :]
+    newtflag[0, 0, 1] -= (newtflag[3, 0, 1] - newtflag[2, 0, 1])
     for pk in tflag.ncattrs():
         setattr(newtflag, pk, getattr(tflag, pk))
     
     shapev = f.createVariable(('PLUME%.2f' % massthreshhold).replace('.', 'pt'), 'i', nfile.variables[firstkey].dimensions)
-    shapev[:] = shape[:]
+    shapev[1:] = shape[:]
+    shapev[0] = shape[0]
     shapev.units = 'ON/OFF'
-    from PseudoNetCDF import Pseudo2NetCDF
-    conv = Pseudo2NetCDF()
-    conv.addVariable(nfile, f, firstkey)
-    f.variables[propkey][:] = conc
-    f.variables[propkey].expression = 'val - 90(%) in horizontal layer'
+    shapev.var_desc = 'ON/OFF'
+    shapev.long_name = ('PLUME%.2f' % massthreshhold).replace('.', 'pt')
+    firstvar = nfile.variables[firstkey]
+    propvar = f.createVariable(firstkey, firstvar.dtype.char, firstvar.dimensions)
+    for pk in tflag.ncattrs():
+        setattr(propvar, pk, getattr(tflag, pk))
+    propvar[1:] = conc[:]
+    propvar.expression = 'val - 90(%) in horizontal layer'
     f.close()
     
 
@@ -76,7 +96,8 @@ if __name__ == '__main__':
         input = yaml.load(file(sys.argv[1], 'r'))
         pa_master = eval(input.get('metawrapper', 'file_master'))(input['files'])
         mass_threshold(pa_master, sys.argv[2], massthreshhold = .9, volmax = inf, tracer = eval(sys.argv[3]))
-    except:
+    except Exception, e:
+        print e
         print
         print
         print '======================================================='
