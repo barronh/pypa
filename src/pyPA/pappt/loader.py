@@ -78,11 +78,11 @@ def LoadPAQAFromYAML(yamlfile):
     try:
         prc_iter = job.processes
     except:
-         prc_iter = [key[:key.rindex('_')-1] for key in pr_rr.variables.keys() if '_' in key]
+        prc_iter = list(set([key[:key.rindex('_')-1] for key in pr_rr.variables.keys() if '_' in key]))
          
 
     from pa_qa import PAdC
-    PAdC(pr_rr, spc_list = job.species, prc_list = job.processes, model = job.model, mechanism = job.mechanism, verbose = True, init = job.init_conc, final = job.final_conc)
+    PAdC(pr_rr, spc_list = job.species, prc_list = prc_iter, model = job.model, mechanism = job.mechanism, verbose = True, init = job.init_conc, final = job.final_conc)
 
 def LoadPyPAFromYAML(yamlfile):
     # Step 0: load YAML file as job, which is an attribute dictionary

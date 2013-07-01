@@ -79,5 +79,5 @@ setup(name = 'pyPA',
       package_dir = {'': 'src'},
       package_data = {'pyPA': data},
       requires = netcdfpkg + ['numpy (>=1.2)', 'yaml', 'PseudoNetCDF'],
-      url = 'https://dawes.sph.unc.edu/trac/pyPA'
+      url = 'https://code.google.com/p/pypa'
       )

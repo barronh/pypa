@@ -56,6 +56,7 @@ def ext_mrg(input):
     # **<values> is replaced by var[:] which evaluates in the global environment
     #   to the current values
     unitconversions = {'umol/m**3': dict(expression = "<values> * VOL / AIRMOLS", new_unit = 'ppm')}
+    unitconversions['micromoles/m**3'] = unitconversions['umol/m**3']
     unitconversions.update(input.get('unitconversions', {}))
     for unit, unit_dict in unitconversions.iteritems():
         unitconversions[unit]['expression'] = unitconversions[unit]['expression'].replace('<value>', 'var[:]')
