@@ -16,7 +16,7 @@ from pyPA.netcdf import NetCDFFile
 
 
 def ext_mrg(input):
-    from numpy import ndarray, newaxis, where, fromfile, zeros, ones
+    from numpy import ndarray, newaxis, where, fromfile, zeros, ones, diff
     from numpy.ma import masked_where, masked_invalid
     from PseudoNetCDF import PseudoNetCDFFile, PseudoNetCDFVariable
     from PseudoNetCDF.pncgen import pncgen
@@ -30,7 +30,15 @@ def ext_mrg(input):
     
     # Analysis volume shape variable name
     shape_name = input.get('shape', 'DEFAULT_SHAPE')
-
+    
+    # Get "edge" processes.  Edge processes have no meaning internally 
+    wedge = input.get('west_edge', ['WADV', 'WDIF'])
+    eedge = input.get('east_edge', ['EADV', 'EDIF'])
+    sedge = input.get('south_edge', ['SADV', 'SDIF'])
+    nedge = input.get('north_edge', ['NADV', 'NDIF'])
+    bedge = input.get('bottom_edge', ['BADV', 'BDIF'])
+    tedge = input.get('top_edge', ['TADV', 'TDIF'])
+    
     # Variable dimension order
     #
     # Provide the order of spatiotemporal dimensions for variables
@@ -248,9 +256,8 @@ def ext_mrg(input):
     outputfile.variables['TFLAG'] = PseudoNetCDFVariable(outputfile, 'TFLAG', 'i', ('TSTEP', 'VAR', 'DATE-TIME'), units = var.units, long_name = var.long_name, var_desc = var.var_desc, values = var[:][:, [0], :].repeat(len(agg_keys)+1, 1))
     
     for key, ktype in agg_keys:
-        print >> sys.stdout, key, 
+        print >> sys.stdout, key, ktype
         dimensions = ('TSTEP',)
-        print key
         try:
             var = pa_master.variables[key]
         except KeyError, (e):
@@ -271,7 +278,9 @@ def ext_mrg(input):
         
         if ktype in ('a',):
             print >> sys.stdout, key
-            numerator = reduce_space(masked_where(mask[mask_slice], var[:]))
+            thismask = mask[mask_slice].copy()
+            masked_var = masked_where(thismask, var[:])
+            numerator = reduce_space(masked_var)
             denominator = 1
         elif ktype in ('s',):
             numerator = shape
@@ -283,7 +292,26 @@ def ext_mrg(input):
                 denominator = init_denominators[unit]
             else:
                 denominator = denominators[unit]
-            numerator = reduce_space(masked_where(mask[mask_slice], var[:]*contributions[unit]))
+            thismask = mask[mask_slice].copy()
+            if key.split('_')[0] in wedge:
+                warn("Setting processes (%s) to zero between cells inside the volume." % ', '.join(wedge))
+                thismask[:, :, :, 1:] = diff(thismask[:].astype('i'), axis = -1) != -1
+            elif key.split('_')[0] in eedge:
+                warn("Setting processes (%s) to zero between cells inside the volume." % ', '.join(eedge))
+                thismask[:, :, :, :-1] = diff(thismask[:, :, :, ::-1].astype('i'), axis = -1)[..., ::-1] != -1
+            elif key.split('_')[0] in sedge:
+                warn("Setting processes (%s) to zero between cells inside the volume." % ', '.join(sedge))
+                thismask[:, :, 1:, :] = diff(thismask[:, :, :, :].astype('i'), axis = -2)[..., :, :] != -1
+            elif key.split('_')[0] in nedge:
+                warn("Setting processes (%s) to zero between cells inside the volume." % ', '.join(nedge))
+                thismask[:, :, :-1, :] = diff(thismask[:, :, ::-1, :].astype('i'), axis = -2)[..., ::-1, :] != -1
+            elif key.split('_')[0] in bedge:
+                warn("Setting processes (%s) to zero between cells inside the volume." % ', '.join(bedge))
+                thismask[:, 1:, :, :] = diff(thismask[:, :, :, :].astype('i'), axis = -3)[..., :, :] != -1
+            elif key.split('_')[0] in tedge:
+                warn("Setting processes (%s) to zero between cells inside the volume." % ', '.join(tedge))
+                thismask[:, :-1, :, :] = diff(thismask[:, ::-1, :, :].astype('i'), axis = -3)[..., ::-1, :, :] != -1
+            numerator = reduce_space(masked_where(thismask, var[:]*contributions[unit]))
         
         values = numerator / denominator
         outputfile.variables[key] = PseudoNetCDFVariable(outputfile, key, 'f', dimensions, values = values, units = unit, long_name = var.long_name, var_desc = var.var_desc)
