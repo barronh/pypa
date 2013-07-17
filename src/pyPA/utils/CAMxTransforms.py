@@ -85,14 +85,14 @@ def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
        from pafiles
               
     """
-    def defaultshape(self):
+    def defaultshape(self, kvname = 'KV', hghtname = 'HGHT'):
         from ..pappt.kvextract import tops2shape, vertcamx
         
         old_shape=[i for i in self.variables['UCNV_O3'].shape]
         new_shape=[i for i in self.variables['UCNV_O3'].shape]
         new_shape[0]+=1
         new_shape=zeros(tuple(new_shape),dtype='bool')
-        new_shape[1:,:,:,:]=tops2shape(vertcamx(CenterTime(self.variables['KV']),CenterTime(self.variables['HGHT']))[tslice,jslice,islice],old_shape)
+        new_shape[1:,:,:,:]=tops2shape(vertcamx(CenterTime(self.variables[kvname]),CenterTime(self.variables[hghtname]))[tslice,jslice,islice],old_shape)
         new_shape[0,:,:,:]=new_shape[1,:,:,:]
         return PseudoIOAPIVariable(self,'DEFAULT_SHAPE','i',('TSTEP', 'LAY', 'ROW', 'COL'),values=new_shape,units='on/off')
 
@@ -169,7 +169,9 @@ def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
     # on vertical diffusivity and layer structure.
     mhas_key = master_file.variables.has_key
     if mhas_key('KV') and mhas_key('HGHT'):
-        master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self))
+        master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self, kvname = 'KV', hghtname = 'HGHT'))
+    elif mhas_key('KV_M2pS') and mhas_key('ZGRID_M'):
+        master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self, kvname = 'KV_M2pS', hghtname = 'ZGRID_M'))
     else:
         warn('Cannot diagnose 3-D DEFAULT_SHAPE\ncamx_pa_master needs KV from vertical_diffusivity (kv) file and HGHT from height/pressure (zp) file to diagnose the planetary boundary layer and provide DEFAULT_SHAPE')
         warn('Providing all cells.')
