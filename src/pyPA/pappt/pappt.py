@@ -10,9 +10,11 @@ from PseudoNetCDF import PseudoNetCDFVariable
 
 from pyPA.utils.CMAQTransforms import cmaq_pa_master
 from pyPA.utils.CAMxTransforms import camx_pa_master
+from pyPA.utils.PATransforms import pafile_master
 from pyPA.pappt.lagrangian import boxes, box_id
 from pyPA.pappt.pseudo_procs import simple_pseudo_procs
 from pyPA.netcdf import NetCDFFile
+from netCDF4 import Dataset, Variable
 
 
 def ext_mrg(input):
@@ -66,6 +68,7 @@ def ext_mrg(input):
     unitconversions = {'umol/m**3': dict(expression = "<values> * VOL / AIRMOLS", new_unit = 'ppm')}
     unitconversions['micromoles/m**3'] = unitconversions['umol/m**3']
     unitconversions.update(input.get('unitconversions', {}))
+    unitconversions = dict([(k, v) for k, v in unitconversions.iteritems() if v is not None])
     for unit, unit_dict in unitconversions.iteritems():
         unitconversions[unit]['expression'] = unitconversions[unit]['expression'].replace('<value>', 'var[:]')
 
@@ -99,6 +102,7 @@ def ext_mrg(input):
                      'mol': '1',
                      'mole': '1',
                      'moles': '1',
+                     'molesC': '1',
                      'None': '1'}
                      
     contributions.update(input.get('contributions', {}))
@@ -201,7 +205,7 @@ def ext_mrg(input):
             warn('pyPA could not evaluate %s with the files you provided; if you need %s, make sure you provided all necessary inputs' % (v, v))
             continue
             
-        if isinstance(unit_contribution, ndarray):
+        if isinstance(unit_contribution, (ndarray, Variable)):
             unit_contribution = unit_contribution[:]
             
         contributions[k] = unit_contribution
@@ -215,7 +219,7 @@ def ext_mrg(input):
             warn('pyPA could not evaluate %s with the files you provided; if you need %s, make sure you provided all necessary inputs' % (v, v))
             continue
             
-        if isinstance(unit_normalizer, ndarray):
+        if isinstance(unit_normalizer, (ndarray, Variable)):
             unit_normalizer = unit_normalizer[:]
             norm_bxs[unit] = reduce_space(bxs * unit_normalizer[..., newaxis])
         else:
@@ -243,7 +247,10 @@ def ext_mrg(input):
         except TypeError:
             return dim
 
-    outputfile.createDimension('TSTEP', getdimlen(pa_master.dimensions['TSTEP']))
+    try:
+        outputfile.createDimension('TSTEP', getdimlen(pa_master.dimensions['TSTEP']))
+    except:
+        outputfile.createDimension('TSTEP', getdimlen(pa_master.dimensions['time']))
     outputfile.createDimension('TSTEP_STAG', getdimlen(outputfile.dimensions['TSTEP'])+1)
         
     outputfile.createDimension('LAY', mask.shape[dimensions['LAY']])
@@ -252,9 +259,18 @@ def ext_mrg(input):
     outputfile.createDimension('VAR', len(agg_keys)+1)
     outputfile.createDimension('DATE-TIME', 2)
     
-    var = pa_master.variables['TFLAG']
-    outputfile.variables['TFLAG'] = PseudoNetCDFVariable(outputfile, 'TFLAG', 'i', ('TSTEP', 'VAR', 'DATE-TIME'), units = var.units, long_name = var.long_name, var_desc = var.var_desc, values = var[:][:, [0], :].repeat(len(agg_keys)+1, 1))
-    
+    try:
+        var = pa_master.variables['TFLAG']
+        outputfile.variables['TFLAG'] = PseudoNetCDFVariable(outputfile, 'TFLAG', 'i', ('TSTEP', 'VAR', 'DATE-TIME'), units = var.units, long_name = var.long_name, var_desc = var.var_desc, values = var[:][:, [0], :].repeat(len(agg_keys)+1, 1))
+    except:
+        try:
+            var = pa_master.variables['tau0']
+            outputfile.variables['tau0'] = PseudoNetCDFVariable(outputfile, 'tau0', 'i', ('TSTEP',), units = var.units, values = var[:])
+            var = pa_master.variables['tau1']
+            outputfile.variables['tau1'] = PseudoNetCDFVariable(outputfile, 'tau1', 'i', ('TSTEP',), units = var.units, values = var[:])
+        except:
+            var = pa_master.variables['time']
+            outputfile.variables['time'] = PseudoNetCDFVariable(outputfile, 'time', var.dtype.char, ('TSTEP',), units = var.units, values = var[:])
     for key, ktype in agg_keys:
         print >> sys.stdout, key, ktype
         dimensions = ('TSTEP',)
@@ -314,9 +330,10 @@ def ext_mrg(input):
             numerator = reduce_space(masked_where(thismask, var[:]*contributions[unit]))
         
         values = numerator / denominator
-        outputfile.variables[key] = PseudoNetCDFVariable(outputfile, key, 'f', dimensions, values = values, units = unit, long_name = var.long_name, var_desc = var.var_desc)
+        outputfile.variables[key] = PseudoNetCDFVariable(outputfile, key, 'f', dimensions, values = values)
+        for vk in var.ncattrs():
+            setattr(outputfile.variables[key], vk, getattr(var, vk))
     print >> sys.stdout
-    
     if reduce_space(bxs).sum(0)[[box_id.HENT, box_id.HDET, box_id.VENT, box_id.VDET]].astype('bool').any():
         simple_pseudo_procs(pa_master = pa_master, outputfile = outputfile, spcs = species, initial = initial, bxs = bxs, norm_bxs = norm_bxs, contributions = contributions, reduce_space = reduce_space)
         processes.extend("VDET VENT HDET HENT EDHDIL EDVDIL".split())
@@ -324,19 +341,21 @@ def ext_mrg(input):
     # For each variable, change the unit until there
     # is no change left.
     for name, var in outputfile.variables.iteritems():
+        print name
         in_unit = var.units.strip()
         while in_unit in unitconversions:
+            print in_unit,
             out_unit = unitconversions[in_unit]['new_unit'].strip()
             expression_str = unitconversions[in_unit]['expression'].replace('<values>', 'var[:]')
             var[:] = eval(expression_str, locals(), outputfile.variables)
             var.units = out_unit.ljust(16)
             in_unit = out_unit
+        print
     
     outputfile.Processes = '\t'.join([p.ljust(16) for p in processes])
     outputfile.Species = '\t'.join([p.ljust(16) for p in species])
     outputfile.Reactions = '\t'.join([p.ljust(16) for p in reactions])
     outputfile.PYPAVERSION = '1'
-    from pyPA.netcdf import NetCDFFile
     outputfile = pncgen(outputfile, NetCDFFile(input['outfile'], mode = 'w', format = 'NETCDF3_CLASSIC'))
     outputfile.sync()
     return outputfile

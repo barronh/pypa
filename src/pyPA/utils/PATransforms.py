@@ -1,3 +1,5 @@
+from pyPA.netcdf import NetCDFFile
+from PseudoNetCDF.MetaNetCDF import file_master
 
 def pafile_master(paths_and_readers):
     for i, (p, r) in enumerate(paths_and_readers):
