@@ -168,15 +168,16 @@ def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
     # Calculate the well mixed region of the troposphere based
     # on vertical diffusivity and layer structure.
     mhas_key = master_file.variables.has_key
-    if mhas_key('KV') and mhas_key('HGHT'):
-        master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self, kvname = 'KV', hghtname = 'HGHT'))
-    elif mhas_key('KV_M2pS') and mhas_key('ZGRID_M'):
-        master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self, kvname = 'KV_M2pS', hghtname = 'ZGRID_M'))
-    else:
-        warn('Cannot diagnose 3-D DEFAULT_SHAPE\ncamx_pa_master needs KV from vertical_diffusivity (kv) file and HGHT from height/pressure (zp) file to diagnose the planetary boundary layer and provide DEFAULT_SHAPE')
-        warn('Providing all cells.')
-        all_vals = ones(map(lambda x: len(master_file.dimensions[x]) + 1 if x == 'TSTEP' else len(master_file.dimensions[x]), ('TSTEP', 'LAY', 'ROW', 'COL')), dtype = 'i')
-        master_file.addMetaVariable('DEFAULT_SHAPE', lambda self: PseudoIOAPIVariable(self,'DEFAULT_SHAPE','i',('TSTEP', 'LAY', 'ROW', 'COL'),values=all_vals,units='on/off'))
+    if not mhas_key('DEFAULT_SHAPE'):
+        if mhas_key('KV') and mhas_key('HGHT'):
+            master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self, kvname = 'KV', hghtname = 'HGHT'))
+        elif mhas_key('KV_M2pS') and mhas_key('ZGRID_M'):
+            master_file.addMetaVariable('DEFAULT_SHAPE',lambda self: defaultshape(self, kvname = 'KV_M2pS', hghtname = 'ZGRID_M'))
+        else:
+            warn('Cannot diagnose 3-D DEFAULT_SHAPE\ncamx_pa_master needs KV from vertical_diffusivity (kv) file and HGHT from height/pressure (zp) file to diagnose the planetary boundary layer and provide DEFAULT_SHAPE')
+            warn('Providing all cells.')
+            all_vals = ones(map(lambda x: len(master_file.dimensions[x]) + 1 if x == 'TSTEP' else len(master_file.dimensions[x]), ('TSTEP', 'LAY', 'ROW', 'COL')), dtype = 'i')
+            master_file.addMetaVariable('DEFAULT_SHAPE', lambda self: PseudoIOAPIVariable(self,'DEFAULT_SHAPE','i',('TSTEP', 'LAY', 'ROW', 'COL'),values=all_vals,units='on/off'))
     return master_file
 
 
