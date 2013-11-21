@@ -1,5 +1,5 @@
 from optparse import OptionParser
-from pyPA.pappt.loader import LoadPyPAFromYAML
+from pyPA.pappt.loader import LoadPyPAFromYAML, LoadPAQAFromYAML
 from glob import glob
 import os
 
@@ -36,7 +36,7 @@ def run():
         netbalance=args[1]
     
     if options.qa:
-        qa(yamlpath)
+        LoadPAQAFromYAML(yamlpath)
     else:
         LoadPyPAFromYAML(yamlpath)
 
