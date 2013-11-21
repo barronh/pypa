@@ -7,6 +7,9 @@ from pappt import ext_mrg #, MergedWriter
 from pyPA.utils.CAMxFiles import *
 from pyPA.utils.CMAQTransforms import *
 from pyPA.utils.CAMxTransforms import *
+from pyPA.utils.CMAQTransforms import cmaq_pa_master
+from pyPA.utils.CAMxTransforms import camx_pa_master
+from pyPA.utils.PATransforms import pafile_master
 from kvextract import tops2shape, vertcamx
 from legacy import LegacyMerged, LegacyMergedCMAQ
 from PseudoNetCDF.ArrayTransforms import CenterTime
@@ -82,7 +85,7 @@ def LoadPAQAFromYAML(yamlfile):
          
 
     from pa_qa import PAdC
-    PAdC(pr_rr, spc_list = job.species, prc_list = prc_iter, model = job.model, mechanism = job.mechanism, verbose = True, init = job.init_conc, final = job.final_conc)
+    PAdC(pr_rr, spc_list = job.species, prc_list = prc_iter, model = getattr(job, 'model', None), mechanism = getattr(job, 'mechanism', None), verbose = True, init = job.init_conc, final = job.final_conc)
 
 def LoadPyPAFromYAML(yamlfile):
     # Step 0: load YAML file as job, which is an attribute dictionary
