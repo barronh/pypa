@@ -262,12 +262,19 @@ def ext_mrg(input):
     try:
         var = pa_master.variables['TFLAG']
         outputfile.variables['TFLAG'] = PseudoNetCDFVariable(outputfile, 'TFLAG', 'i', ('TSTEP', 'VAR', 'DATE-TIME'), units = var.units, long_name = var.long_name, var_desc = var.var_desc, values = var[:][:, [0], :].repeat(len(agg_keys)+1, 1))
+        if (outputfile.variables['TFLAG'][:, :, 0] < 1000000).any():
+            outputfile.variables['TFLAG'][:, :, 0] += 2000000
+        if (outputfile.variables['TFLAG'][:, :, 1] < 100).all():
+            outputfile.variables['TFLAG'][:, :, 1] *= 10000
+        elif (outputfile.variables['TFLAG'][:, :, 1] < 10000).all():
+            outputfile.variables['TFLAG'][:, :, 1] *= 100
+        
     except:
         try:
             var = pa_master.variables['tau0']
-            outputfile.variables['tau0'] = PseudoNetCDFVariable(outputfile, 'tau0', 'i', ('TSTEP',), units = var.units, values = var[:])
+            outputfile.variables['tau0'] = PseudoNetCDFVariable(outputfile, 'tau0', 'd', ('TSTEP',), units = var.units, values = var[:])
             var = pa_master.variables['tau1']
-            outputfile.variables['tau1'] = PseudoNetCDFVariable(outputfile, 'tau1', 'i', ('TSTEP',), units = var.units, values = var[:])
+            outputfile.variables['tau1'] = PseudoNetCDFVariable(outputfile, 'tau1', 'd', ('TSTEP',), units = var.units, values = var[:])
         except:
             var = pa_master.variables['time']
             outputfile.variables['time'] = PseudoNetCDFVariable(outputfile, 'time', var.dtype.char, ('TSTEP',), units = var.units, values = var[:])
