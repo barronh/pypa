@@ -105,8 +105,7 @@ def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
     # Find irr or ipr and open as pafile; pafiles have grid
     # and padomain information that can be used to shape and
     # subset input files
-    pafiles = ([(p, r) for p,r in paths_and_readers if r == 'irr'] +
-               [(p, r) for p,r in paths_and_readers if r == 'ipr'])
+    pafiles = ([(p, r) for p,r in paths_and_readers if r == 'ipr'] + [(p, r) for p,r in paths_and_readers if r == 'irr'])
 
     if pafiles != []:
         p, r = pafiles[0]
@@ -157,7 +156,7 @@ def camx_pa_master(paths_and_readers,tslice=None,kslice=None,jslice=None,islice=
     #   UCNV [=] m**3/mol_{air}
     #   AVOL [=] m**3
     #   AIRMOLS = AVOL/UCNV [=] mol_air
-    master_file.addMetaVariable('AIRMOLS',lambda self: PseudoIOAPIVariable(self,'AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=self.variables['AVOL_O3'][:]/self.variables['UCNV_O3'][:],units='moles**-1'))
+    master_file.addMetaVariable('AIRMOLS',lambda self: PseudoIOAPIVariable(self,'AIRMOLS','f',('TSTEP','LAY','ROW','COL'),values=self.variables['AVOL_O3'][:]/self.variables['UCNV_O3'][:],units='moles'))
 
     # Calculate INVAIRMOLS from IPR outputs
     #   UCNV [=] m**3/mol_{air}

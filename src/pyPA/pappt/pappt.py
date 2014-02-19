@@ -191,6 +191,7 @@ def ext_mrg(input):
     
     agg_keys = [(shape_name, 's')]
     agg_keys.extend([(k, 'a') for k in list(set([v for k, v in contributions.iteritems()]+[v for k, v in normalizers.iteritems()]))])
+    extra_outputs = [(k, k + '4D') for k in list(set([v for k, v in contributions.iteritems()]+[v for k, v in normalizers.iteritems()])) if k not in ('1', 'None')]
     agg_keys.extend([(rxn, 'r') for rxn in reactions])
     
     for spc in species:
@@ -358,6 +359,8 @@ def ext_mrg(input):
             var.units = out_unit.ljust(16)
             in_unit = out_unit
         print
+    for ink, outk in extra_outputs:
+            outputfile.variables[outk] = pa_master.variables[ink]
     
     outputfile.Processes = '\t'.join([p.ljust(16) for p in processes])
     outputfile.Species = '\t'.join([p.ljust(16) for p in species])
