@@ -1,0 +1,5 @@
+# Configuration Initial and Final #
+
+pyPA requires Process Analysis data and instantaneous concentration data.  The instantaneous data must accessible as initial and final variables.  The initial and final data are treated similarly to process data, but must be treated differently to calculate entrainment and detrainment pseudo-processes.  Because of their special status, pyPA must know what nomenclature to use to access these variables.  The init and final configuration keys tell process analysis how to identify these variables.
+
+For CAMx, the initial and final data is output with process data.  For other models (e.g. CMAQ), instantaneous files must be included in [files](ConfigFilePathAndReader.md).  When instantaneous data is provided using a time-staggered format, the [metawrapper](ConfigMetaWrapper.md) automatically transforms the data.

@@ -1,0 +1,8 @@
+# Introduction #
+Process Analysis quantiﬁes the individual processes that lead to, for example, ozone by coupling in-model algorithms and post-processor applications. In-model algorithms output individual cell values for integrated process rates (IPR) and integrated reaction rates (IRR). IPR quantiﬁes the physical process (i.e. emissions, advection, diffusion and net chemistry) contributions to modeled chemical species. IRR quantiﬁes the total mass throughput of each chemical reaction. Post processors then analyze these rates individually or grouped understand the evolution of a chemical species.
+
+Grid cells can be combined conceptually understand development of a chemical concentration in a model mixing volume. Within the region of interest, the post-processor develops a single set of IPR and IRR that can be used to understand that regions ozone development. We use IPR to identify the ma jor physical contributions to ozone and ozone precursors. Then, if chemistry is a concern, we use IRR to analyze the network of chemical reactions to develop and understanding of precursor interactions.
+
+The image below shows a plume using colored outlines that originated from a chemical release.  The data from all the cells within the colored outlines has been integrated into a single process line shown in black.
+
+![http://pypa.googlecode.com/files/pypa.png](http://pypa.googlecode.com/files/pypa.png)
